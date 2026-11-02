@@ -1,6 +1,6 @@
 # Browser viewer
 
-Current viewer: **0.2.54**; release effect: **GTap 1.2.26**.
+Current viewer: **0.2.64**; release effect: **GTap 1.2.27**.
 
 Use [README.md](README.md) for installation or
 [the HTML guide](web/public/guide/index.html) for everyday use.
@@ -23,3 +23,7 @@ The user guide includes a Lens Debaser teaser and optional tawk.to support chat,
 loaded after the guide finishes loading. The guide remains readable offline.
 
 Zoom (1×–4×) and Detail Level (Q1–Q4) are independent. Q controls underlying detail in all scope types; Smooth now applies to every plot using spatial, value-axis, circular-hue or soft-point filtering as appropriate. DoubleD always retains its aspect ratio. The expanded grids require GTap 1.2.25 and the updated host.
+
+Parking assist (PAS) adds adjustable audible warnings for highlights, shadows and saturation to one selected scope slot. OG suspends PAS. Settings files preserve PAS configuration and image-area selection. Enable PAS in Controls to start browser audio. Hue histogram presets include All colours, Near-neutral, Shadows and Highlights, with custom ranges and pixel-count or chroma-weighted readings; these controls require GTap 1.2.27 or later.
+
+PAS local visual editors: waveform start/end handles and buffer arrows; neutral-drift concentric circles; middle-grey target/tolerance/approach bands. Signal/grading limit banks are independently saved. Explicit Fit limits action retains continuous-limit buffers; selected-area grey capture creates a custom target. Preview raster work runs only while PAS settings are open. No release yet.

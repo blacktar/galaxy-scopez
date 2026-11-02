@@ -7,7 +7,7 @@ Made by **Vidar Andersen**. [Read the user guide](https://vidarandersen.com/dmz/
 
 ## Install and start
 
-This release includes **GTap 1.2.26** and **viewer 0.2.54**.
+This release includes **GTap 1.2.27** and **viewer 0.2.64**.
 The supplied universal GTap binary requires **macOS 27 or later** (Apple silicon
 or Intel). Earlier macOS versions have not been verified for this release.
 DaVinci Resolve is required. The new `.pkg` installer bundles the server,
@@ -56,3 +56,7 @@ See [DEVELOPING.md](DEVELOPING.md) for source builds and tests. Source archives
 without the prebuilt effect cannot run the release installer until GTap is built.
 
 Zoom (1×–4×) and Detail Level (Q1–Q4) are independent. Q controls underlying detail in all scope types; Smooth now applies to every plot using spatial, value-axis, circular-hue or soft-point filtering as appropriate. DoubleD always retains its aspect ratio. The expanded grids require GTap 1.2.25 and the updated host.
+
+Parking assist (PAS) adds adjustable audible warnings for highlights, shadows and saturation to one selected scope slot. OG suspends PAS. Settings files preserve PAS configuration and image-area selection. Enable PAS in Controls to start browser audio. Hue histogram presets include All colours, Near-neutral, Shadows and Highlights, with custom ranges and pixel-count or chroma-weighted readings; these controls require GTap 1.2.27 or later.
+
+PAS local visual editors: waveform start/end handles and buffer arrows; neutral-drift concentric circles; middle-grey target/tolerance/approach bands. Signal/grading limit banks are independently saved. Explicit Fit limits action retains continuous-limit buffers; selected-area grey capture creates a custom target. Preview raster work runs only while PAS settings are open. No release yet.

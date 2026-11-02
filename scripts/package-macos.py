@@ -10,6 +10,8 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--downloads',type=Path,default=Path('/tmp'))
 p.add_argument('--application-identity',default='Developer ID Application: Vidar Andersen (CMRVMTA2G5)')
 p.add_argument('--installer-identity',default='Developer ID Installer: Vidar Andersen (CMRVMTA2G5)')
+p.add_argument('--runtime',type=Path,help='Reuse a verified installed universal Node runtime directory')
+p.add_argument('--gtap',type=Path,required=True,help='Exact GTap bundle ZIP for this release')
 p.add_argument('--resume',action='store_true',help='Reuse staged payload after a signing-only failure')
 a=p.parse_args()
 def run(*cmd): subprocess.run([str(c) for c in cmd],check=True,cwd=root)
@@ -25,20 +27,27 @@ if not a.resume:
  contents=app/'Contents';resources=contents/'Resources';host=resources/'host'
  for d in [contents/'MacOS',resources/'runtime',host/'web',host/'build',work/'scripts']:d.mkdir(parents=True,exist_ok=True)
  # Verify executable runtime archives against the official Node distribution manifest.
- node_version='24.22.1'
- manifest=(a.downloads/'ghetto-node-shasums.txt').read_text()
- for arch in ['arm64','x64']:
-  archive=a.downloads/f'ghetto-node-{arch}.tar.gz'
-  name=f'node-v{node_version}-darwin-{arch}.tar.gz'
-  expected=next(line.split()[0] for line in manifest.splitlines() if line.split()[-1]==name)
-  if hashlib.sha256(archive.read_bytes()).hexdigest()!=expected:raise SystemExit('Node checksum mismatch: '+arch)
-  with tarfile.open(archive) as tar:
-   for relative in ['bin/node','LICENSE']:
-    data=tar.extractfile(f'node-v{node_version}-darwin-{arch}/{relative}').read()
-    (work/f'{arch}-{Path(relative).name}').write_bytes(data)
- run('lipo','-create',work/'arm64-node',work/'x64-node','-output',resources/'runtime/node')
- (resources/'runtime/node').chmod(0o755)
- shutil.copy2(work/'arm64-LICENSE',resources/'runtime/LICENSE')
+ if a.runtime:
+  run('codesign','--verify','--strict',a.runtime/'node')
+  if not {'arm64','x86_64'}.issubset(subprocess.check_output(['lipo','-archs',str(a.runtime/'node')],text=True).split()):raise SystemExit('Runtime must support both architectures')
+  if subprocess.check_output([str(a.runtime/'node'),'--version'],text=True).strip()!='v24.22.1':raise SystemExit('Unexpected runtime version')
+  shutil.copy2(a.runtime/'node',resources/'runtime/node')
+  shutil.copy2(a.runtime/'LICENSE',resources/'runtime/LICENSE')
+ else:
+  node_version='24.22.1'
+  manifest=(a.downloads/'ghetto-node-shasums.txt').read_text()
+  for arch in ['arm64','x64']:
+   archive=a.downloads/f'ghetto-node-{arch}.tar.gz'
+   name=f'node-v{node_version}-darwin-{arch}.tar.gz'
+   expected=next(line.split()[0] for line in manifest.splitlines() if line.split()[-1]==name)
+   if hashlib.sha256(archive.read_bytes()).hexdigest()!=expected:raise SystemExit('Node checksum mismatch: '+arch)
+   with tarfile.open(archive) as tar:
+    for relative in ['bin/node','LICENSE']:
+     data=tar.extractfile(f'node-v{node_version}-darwin-{arch}/{relative}').read()
+     (work/f'{arch}-{Path(relative).name}').write_bytes(data)
+  run('lipo','-create',work/'arm64-node',work/'x64-node','-output',resources/'runtime/node')
+  (resources/'runtime/node').chmod(0o755)
+  shutil.copy2(work/'arm64-LICENSE',resources/'runtime/LICENSE')
  # Ship production host modules, browser assets and pinned dependencies, not tests/tooling.
  for f in (root/'web').glob('*.mjs'):
   if not f.name.endswith('.test.mjs'):shutil.copy2(f,host/'web'/f.name)
@@ -56,7 +65,7 @@ if not a.resume:
    else:shutil.copy2(src,dst)
  shutil.copy2(root/'release/scope-analysis.node',host/'build/scope-analysis.node')
  plugin=payload/'Library/OFX/Plugins';plugin.mkdir(parents=True)
- run('ditto','-x','-k',root/'release/GTap-v1.2.26.ofx.bundle.zip',plugin)
+ run('ditto','-x','-k',a.gtap.resolve(),plugin)
  for name in ['LICENSE','LICENSE-NOTICE.txt','THIRD-PARTY-NOTICES.txt']:shutil.copy2(root/name,resources/name)
  info={'CFBundleIdentifier':'com.vidarandersen.ghettoscopez','CFBundleName':'Ghetto Scopez','CFBundleDisplayName':'Ghetto Scopez','CFBundleExecutable':'GhettoScopez','CFBundleIconFile':'AppIcon.icns','CFBundlePackageType':'APPL','CFBundleShortVersionString':version,'CFBundleVersion':version,'LSMinimumSystemVersion':'27.0','LSUIElement':True,'NSHighResolutionCapable':True,'NSHumanReadableCopyright':'© 2026 Vidar Andersen'}
  shutil.copy2(root/'installer/AppIcon.icns',resources/'AppIcon.icns')

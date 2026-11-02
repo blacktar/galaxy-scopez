@@ -1,3 +1,4 @@
+import {targetTolerancePoints} from './public/vector-targets.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {signalSpec,coding,decodeSample,decodeYCbCr,calibratedTargets} from './public/signal.mjs';
 import {analyzeFrame,scopes} from './scopes.mjs';import {scopePacket,unpackScope} from './public/scope-wire.mjs';
@@ -14,3 +15,5 @@ test('unsupported storage/alpha/subsampling rejected instead of silently reinter
 test('decoder rejects a checksummed frame with contradictory signal/range metadata',()=>{const s=scopes();s.measurement.coding.black=64;assert.throws(()=>unpackScope(scopePacket(s,0,1).buffer),/Inconsistent/);});
 test('range anchoring never clamps adjacent float32 excursions',()=>{const s=spec(),k=coding(s),a=new Float32Array(1),bits=new Uint32Array(a.buffer);a[0]=k.black/k.maxCode;bits[0]--;assert.ok(decodeSample(a[0],0,0,s)[0]<0);a[0]=k.white/k.maxCode;bits[0]++;assert.ok(decodeSample(a[0],0,0,s)[0]>1);});
 test('declared frame signal wins over synthetic generator controls in analysis metadata',()=>{const signal=spec('RGB','video',12,'bt2020-ncl'),d=analyzeFrame({signal,width:1,height:1,data:new Float32Array([256/4095,256/4095,256/4095])},{range:'full',matrix:'bt709',codeBits:10});assert.equal(d.config.range,'video');assert.equal(d.config.matrix,'bt2020-ncl');assert.equal(d.config.codeBits,12);assert.equal(d.stats[0].min,0);});
+
+test('target tolerance follows ±5 degrees and ±5 percent amplitude for each colour and matrix',()=>{for(const matrix of ['bt709','bt2020-ncl'])for(const target of calibratedTargets(matrix)){const radius=Math.hypot(target.cb,target.cr),angle=Math.atan2(target.cr,target.cb),points=targetTolerancePoints(target);for(let i=0;i<4;i++){const [cb,cr]=points[i];close(Math.hypot(cb,cr)/radius,[.95,1.05,1.05,.95][i],1e-12);const delta=Math.atan2(Math.sin(Math.atan2(cr,cb)-angle),Math.cos(Math.atan2(cr,cb)-angle));close(delta,[-5,-5,5,5][i]*Math.PI/180,1e-12);}}});
