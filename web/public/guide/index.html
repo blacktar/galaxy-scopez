@@ -20,7 +20,7 @@
       "description": "Show scopes (both familiar & new) for DaVinci Resolve using a tablet, phone, laptop or any display with a browser connected to your network.",
       "applicationCategory": "MultimediaApplication",
       "operatingSystem": "macOS 27 or later (host)",
-      "softwareRequirements": "DaVinci Resolve on the host Mac; a web browser on the receiving device; a shared local network. Node.js is installed automatically when needed.",
+      "softwareRequirements": "DaVinci Resolve on the host Mac; a web browser on the receiving device; a shared local network. The signed and notarised macOS installer includes GTap and the Node.js runtime.",
       "softwareVersion": "0.2.64",
       "author": {
         "@id": "https://vidarandersen.com/#vidar-andersen"
@@ -35,21 +35,31 @@
       "softwareAddOn": {
         "@type": "SoftwareApplication",
         "name": "GTap",
-        "softwareVersion": "1.2.24",
+        "softwareVersion": "1.2.27",
         "operatingSystem": "macOS 27 or later",
         "applicationCategory": "MultimediaApplication",
         "author": {
           "@id": "https://vidarandersen.com/#vidar-andersen"
         },
         "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
-      }
+      },
+      "featureList": [
+        "Live browser scopes for DaVinci Resolve on a local network",
+        "Waveform, RGB parade and histograms, vectorscopes, DoubleD, 3D colour cube and saturation vs luma",
+        "Hue histogram presets for all colours, near-neutral pixels, shadows and highlights, with custom ranges and chroma weighting",
+        "Parking assistance (PAS): audible highlight, shadow and saturation warnings, visual boundaries and one-scope assignment",
+        "Source / working-space float32 RGB tap without an implicit colour transform",
+        "Adjustable trace zoom, Q1–Q4 detail, smoothing, gain and brightness",
+        "Image-area selection, colour isolation, scope snapshots and portable settings files",
+        "Single-scope and multiple-scope layouts, including OG"
+      ]
     },
     {
       "@type": "TechArticle",
       "@id": "https://vidarandersen.com/dmz/ghettoscopez/#guide",
       "url": "https://vidarandersen.com/dmz/ghettoscopez/",
       "headline": "Ghetto Scopez — User guide",
-      "description": "Show scopes (both familiar & new) for DaVinci Resolve using a tablet, phone, laptop or any display with a browser connected to your network.",
+      "description": "User guide to Ghetto Scopez and GTap: installation, live scopes, hue histogram presets, Parking Assistance sound warnings, trace controls, image-area selection and saved comparisons.",
       "inLanguage": "en",
       "dateModified": "2026-11-02",
       "author": {
@@ -64,7 +74,7 @@
         "@id": "https://vidarandersen.com/dmz/ghettoscopez/#webpage"
       },
       "image": "https://vidarandersen.com/dmz/ghettoscopez/assets/fullscreen-scopes.png?v=20261031",
-      "version": "0.2.64-r2"
+      "version": "0.2.64-r3"
     },
     {
       "@type": "WebPage",
