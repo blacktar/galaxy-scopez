@@ -16,11 +16,11 @@ build_number=0
 build_number=$((build_number + 1))
 version="$release.$build_number"
 cat > "$staging/TapVersion.hpp" <<VERSION
-#define GHETTO_TAP_MAJOR $major
-#define GHETTO_TAP_MINOR $minor
-#define GHETTO_TAP_BUILD $build_number
-#define GHETTO_TAP_VERSION "$version"
-#define GHETTO_TAP_LABEL "GTap v$version"
+#define GTAP_MAJOR $major
+#define GTAP_MINOR $minor
+#define GTAP_BUILD $build_number
+#define GTAP_VERSION "$version"
+#define GTAP_LABEL "GTap v$version"
 VERSION
 mkdir -p "$bundle/Contents/MacOS" build/ofx-objects
 flags=(-I"$staging" -std=c++17 -O2 -fvisibility=hidden -arch arm64 -arch x86_64 -I"$sdk/OpenFX-1.4/include" -I"$sdk/Support/include")

@@ -51,7 +51,7 @@ current=scan();pending=(set(state['pending'])|changed|{'index.html'})&current.ke
 payload={name:(guide/name).read_bytes() for name in pending}
 manifest={'version':version,'viewerVersion':base,'date':stamp,'entrypoint':'index.html','files':[{'path':name,'bytes':sig[0]} for name,sig in sorted(current.items())]}
 payload['deployment-manifest.json']=(json.dumps(manifest,indent=2)+'\n').encode()
-out=root.parent/f'ghettoscopes_{stamp}_v{version}_diff.zip'
+out=root.parent/f'galaxyscopez_{stamp}_v{version}_diff.zip'
 with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=1) as z:
  for name in sorted({str(parent)+'/' for name in payload for parent in Path(name).parents if str(parent)!='.'}):
   info=zipfile.ZipInfo(name);info.create_system=3;info.external_attr=((stat.S_IFDIR|0o755)<<16)|16;z.writestr(info,b'')

@@ -4,7 +4,7 @@ import hashlib,json,os,stat,subprocess,sys,zipfile
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 version=(root/'web/VERSION').read_text().strip()
-out=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else root/'build'/f'Ghetto-Scopez-{version}-mac.zip'
+out=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else root/'build'/f'Galaxy-Scopez-{version}-mac.zip'
 out.parent.mkdir(parents=True,exist_ok=True)
 tracked=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode().split('\0')
 required=json.loads((root/'web/package.json').read_text())['dependencies']
@@ -21,12 +21,12 @@ for name,expected in required.items():
  extra += [str(p.relative_to(root)) for p in paths if p.is_file()]
 files=sorted(set(filter(None,tracked+extra)))
 with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
- directories=sorted({'Ghetto-Scopez/'}|{'Ghetto-Scopez/'+str(parent)+'/' for rel in files for parent in Path(rel).parents if str(parent)!='.'})
+ directories=sorted({'Galaxy-Scopez/'}|{'Galaxy-Scopez/'+str(parent)+'/' for rel in files for parent in Path(rel).parents if str(parent)!='.'})
  for name in directories:
   info=zipfile.ZipInfo(name);info.create_system=3
   info.external_attr=((stat.S_IFDIR|0o755)<<16)|0x10;z.writestr(info,b'')
  for rel in files:
-  path=root/rel;info=zipfile.ZipInfo.from_file(path,'Ghetto-Scopez/'+rel)
+  path=root/rel;info=zipfile.ZipInfo.from_file(path,'Galaxy-Scopez/'+rel)
   mode=0o755 if path.stat().st_mode&0o111 or path.suffix in ['.command','.sh'] else 0o644
   info.create_system=3;info.external_attr=(stat.S_IFREG|mode)<<16;info.compress_type=zipfile.ZIP_DEFLATED
   z.writestr(info,path.read_bytes())

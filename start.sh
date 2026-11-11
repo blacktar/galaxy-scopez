@@ -6,7 +6,7 @@ command -v node >/dev/null || { echo 'Double-click Install.command first.' >&2; 
 # A second launch opens the existing host instead of replacing it.
 if curl --fail --silent --max-time 1 http://127.0.0.1:8765/api/tap-info | /usr/bin/grep -q 'Scopes host: connected'; then
  open http://127.0.0.1:8765/guide/index.html
- echo 'Ghetto Scopez is already running.'
+ echo 'Galaxy Scopez is already running.'
  exit 0
 fi
 SCOPE_DIAGNOSTICS=0 HOST=0.0.0.0 node web/server.mjs &

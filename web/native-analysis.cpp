@@ -40,7 +40,7 @@ static napi_value run(napi_env e,napi_callback_info info){try{
  if(width<1||height<1||uint64_t(width)*height>16777216||count!=size_t(width)*height*3||x0<0||x1>width||y0<0||y1>height||x0>=x1||y0>=y1||levels<2||levels>4096||(ww<512||ww>2048||ww%512)||(vs!=512&&vs!=1024&&vs!=1536&&vs!=2048)||(tw<512||tw>2048||tw%512)||th!=tw*2||!(mx>mn)||!(zoom>0)||!(txb>0)||!(tyb>0))throw std::runtime_error("Invalid native dimensions/configuration");
  const char*names[]={"wave","parade","hist","vector","low","mid","high","twin"};size_t sizes[]={size_t(ww)*levels,size_t(ww)*levels*3,size_t(hb)*3,size_t(vs)*vs,size_t(vs)*vs,size_t(vs)*vs,size_t(vs)*vs,size_t(tw)*th};Plane p[8];
  for(int j=0;j<8;j++){p[j].p=(uint32_t*)typed(e,prop(e,planes,names[j]),napi_uint32_array,p[j].n);if(p[j].n!=sizes[j])throw std::runtime_error("Invalid native plane dimensions");}
- Stats stats[4],raw[3];Pair pairs[2];uint32_t bp[3]={},bo[3]={},bn[3]={},outside=0;double half=.5/zoom;
+ Stats stats[4],raw[3];Pair pairs[2];uint32_t bp[3]={},bo[3]={},bn[3]={},outside=0;double half=.5/zoom,edge=half+2.220446049250313e-16;
  const int numberMask=mask;
  auto scanImpl=[&](auto tag,int begin,int end,Plane* p,Stats* stats,Stats* raw,Pair* pairs,uint32_t* bp,uint32_t* bo,uint32_t* bn,uint32_t&outside){
  const int mask=decltype(tag)::value<0?int(numberMask):decltype(tag)::value;
@@ -86,7 +86,7 @@ static napi_value run(napi_env e,napi_callback_info info){try{
 #if defined(__aarch64__)
  if constexpr(decltype(tag)::value==240){if(ordinary[sx-x0]&&txb>=1&&tyb>=2){
   const size_t at=sx-x0,span=x1-x0;double u=derived[span+at],v=derived[2*span+at];int band=l<lc?0:l<hc?1:2;bn[band]++;
-  if(u< -half||u>half||v< -half||v>half){outside++;bo[band]++;}else{int x=int(roundBin(derived[7*span+at])),y=int(roundBin(derived[8*span+at]));p[4+band].add(size_t(y)*vs+x);bp[band]++;}
+  if(u < -edge||u>edge||v < -edge||v>edge){outside++;bo[band]++;}else{int x=int(roundBin(derived[7*span+at])),y=int(roundBin(derived[8*span+at]));p[4+band].add(size_t(y)*vs+x);bp[band]++;}
   for(int pair=0;pair<2;pair++){int x=int(roundBin(derived[size_t(3+pair*2)*span+at])),y=int(roundBin(derived[size_t(4+pair*2)*span+at]));p[7].add(size_t(y)*tw+x);pairs[pair].plotted++;}
   continue;
  }}
@@ -102,7 +102,7 @@ static napi_value run(napi_env e,napi_callback_info info){try{
 #if defined(__aarch64__)
  if constexpr(decltype(tag)::value==240){u=derived[size_t(x1-x0)+sx-x0];v=derived[size_t(2)*(x1-x0)+sx-x0];}else
 #endif
- {u=(b-l)/(2*(1-kb));v=(r-l)/(2*(1-kr));}int band=l<lc?0:l<hc?1:2;bn[band]++;if(u< -half||u>half||v< -half||v>half){outside++;bo[band]++;}else{int x,y;
+ {u=(b-l)/(2*(1-kb));v=(r-l)/(2*(1-kr));}int band=l<lc?0:l<hc?1:2;bn[band]++;if(u < -edge||u>edge||v < -edge||v>edge){outside++;bo[band]++;}else{int x,y;
 #if defined(__aarch64__)
  if constexpr(decltype(tag)::value==240){x=int(roundBin(derived[size_t(7)*(x1-x0)+sx-x0]));y=int(roundBin(derived[size_t(8)*(x1-x0)+sx-x0]));}else
 #endif

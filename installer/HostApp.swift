@@ -11,10 +11,10 @@ final class HostApp: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.title = "GS"
-        item.button?.toolTip = "Ghetto Scopez"
+        item.button?.toolTip = "Galaxy Scopez"
         let menu = NSMenu()
         menu.addItem(status)
-        for (title, selector) in [("Open Viewer", #selector(viewer)), ("Open User Guide", #selector(guide)), ("Start Server", #selector(start)), ("Stop Server", #selector(stop)), ("Show Log", #selector(showLog)), ("Quit Ghetto Scopez", #selector(quit))] {
+        for (title, selector) in [("Open Viewer", #selector(viewer)), ("Open User Guide", #selector(guide)), ("Start Server", #selector(start)), ("Stop Server", #selector(stop)), ("Show Log", #selector(showLog)), ("Quit Galaxy Scopez", #selector(quit))] {
             let entry = NSMenuItem(title: title, action: selector, keyEquivalent: "")
             entry.target = self
             menu.addItem(entry)
@@ -31,7 +31,7 @@ final class HostApp: NSObject, NSApplicationDelegate {
         return false
     }
     var logURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Ghetto Scopez/host.log")
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Galaxy Scopez/host.log")
     }
     @objc func start() {
         guard child == nil else { return }
@@ -72,7 +72,7 @@ final class HostApp: NSObject, NSApplicationDelegate {
         } catch {
             child = nil
             status.title = "Could not start server — see log"
-            NSLog("Ghetto Scopez: %@", error.localizedDescription)
+            NSLog("Galaxy Scopez: %@", error.localizedDescription)
         }
     }
     @objc func stop() {
@@ -92,11 +92,19 @@ if CommandLine.arguments.contains("--create-desktop-alias") {
     do {
         let target = Bundle.main.bundleURL
         let desktop = try FileManager.default.url(for: .desktopDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        let output = CommandLine.arguments.count > 2 ? URL(fileURLWithPath: CommandLine.arguments[2]) : desktop.appendingPathComponent("Ghetto Scopez")
+        let output = CommandLine.arguments.count > 2 ? URL(fileURLWithPath: CommandLine.arguments[2]) : desktop.appendingPathComponent("Galaxy Scopez")
+        // Rename our existing Finder alias when it already resolves to this bundle.
+        if CommandLine.arguments.count == 2 && !FileManager.default.fileExists(atPath: output.path) {
+            let legacy = desktop.appendingPathComponent("Ghetto Scopez")
+            if let resolved = try? URL(resolvingAliasFileAt: legacy, options: [.withoutUI]),
+               resolved.standardizedFileURL == target.standardizedFileURL {
+                try FileManager.default.moveItem(at: legacy, to: output)
+            }
+        }
         if FileManager.default.fileExists(atPath: output.path) {
             let resolved = try URL(resolvingAliasFileAt: output, options: [.withoutUI])
             guard resolved.standardizedFileURL == target.standardizedFileURL else {
-                throw NSError(domain: "GhettoScopez", code: 1, userInfo: [NSLocalizedDescriptionKey: "Desktop item already exists; it was left unchanged."])
+                throw NSError(domain: "GalaxyScopez", code: 1, userInfo: [NSLocalizedDescriptionKey: "Desktop item already exists; it was left unchanged."])
             }
         } else {
             let bookmark = try target.bookmarkData(options: [.suitableForBookmarkFile], includingResourceValuesForKeys: nil, relativeTo: nil)

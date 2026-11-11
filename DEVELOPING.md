@@ -60,7 +60,7 @@ The source build commands above remain available for contributors.
 ## Standalone guide deployment
 
 `python3 scripts/package-guide.py OUTPUT_DIRECTORY` creates
-`ghettoscopes_YYYYMMDD_vVERSION.zip`, using the stamped release date and version.
+`galaxyscopez_YYYYMMDD_vVERSION.zip`, using the stamped release date and version.
 Unzip its contents into a static site's document root: `index.html`, `assets/`
 and `licences/` stay together. The ZIP also includes `deployment-manifest.json`
 and `SHA256SUMS` for per-file comparisons between guide versions.

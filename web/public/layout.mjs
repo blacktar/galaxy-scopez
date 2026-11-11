@@ -1,5 +1,5 @@
 export const DEFAULT_LAYOUT=[4,5,6,7];
-export const SCOPE_NAMES=['Waveform','RGB parade','RGB histogram','Vectorscope','Vectorscope · Lows','Vectorscope · Mids','Vectorscope · Highs','DoubleD','RGB histogram · Separate','Vectorscopes · High / Mid / Low','Red histogram','Green histogram','Blue histogram','3D colour cube','Saturation vs luma','Hue histogram','OG'];
+export const SCOPE_NAMES=['Waveform','RGB parade','RGB histogram','Vectorscope','Vectorscope · Lows','Vectorscope · Mids','Vectorscope · Highs','DoubleD','RGB histogram · Separate','Vectorscopes · High / Mid / Low','Red histogram','Green histogram','Blue histogram','3D colour cube','Saturation vs luma','Hue histogram','OG','OG Synth (experimental)'];
 export function validLayout(a){return Array.isArray(a)&&a.length===4&&a.every(v=>Number.isInteger(v)&&v>=-1&&v<SCOPE_NAMES.length)&&!(a.includes(9)&&a.some(v=>[4,5,6].includes(v)))&&new Set(a.filter(v=>v>=0)).size===a.filter(v=>v>=0).length;}
 export function assignSlot(layout,slot,scope){if(!validLayout(layout)||!Number.isInteger(slot)||slot<0||slot>3||!Number.isInteger(scope)||scope< -1||scope>=SCOPE_NAMES.length)throw Error('Invalid scope layout');const next=[...layout],other=scope<0?-1:next.indexOf(scope);if(other>=0)next[other]=next[slot];next[slot]=scope;if(scope===9)for(let i=0;i<4;i++){if(i!==slot&&[4,5,6].includes(next[i]))next[i]=-1;}else if([4,5,6].includes(scope))for(let i=0;i<4;i++){if(next[i]===9)next[i]=-1;}return next;}
 export const LAYOUT_MODES=['top','bottom','left','right','grid','row','column','single','two'];
@@ -29,7 +29,7 @@ export function arrangeLayout(layout,mode='top',share=40){
 }
 
 // Both histogram views share the same exact count plane; never analyse it twice.
-export function analysisScopes(layout){return [...new Set(layout.filter(i=>i>=0).flatMap(i=>i===9?[4,5,6]:[i===16?3:i===14?9:i===15?10:i===13?8:i===8||i>=10?2:i]))].sort((a,b)=>a-b);}
+export function analysisScopes(layout){return [...new Set(layout.filter(i=>i>=0).flatMap(i=>i===17?[3,9]:i===9?[4,5,6]:[i===16?3:i===14?9:i===15?10:i===13?8:i===8||i>=10?2:i]))].sort((a,b)=>a-b);}
 
 // An active OG has no second menu entry, even in alternate settings controls.
 export function scopeChoices(layout,current=-1){return SCOPE_NAMES.map((name,id)=>({name,id})).filter(item=>item.id!==16||!layout.includes(16)||current===16);}

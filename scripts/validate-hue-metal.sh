@@ -8,7 +8,8 @@ exec > >(tee "$output/validation.log") 2>&1
 trap 'echo "FAILED at line $LINENO. Send validation.log; no installation was performed."' ERR
 node_bin="${NODE_BINARY:-$(command -v node || true)}"
 if [[ -z "$node_bin" ]]; then
- node_bin="/Applications/Ghetto Scopez.app/Contents/Resources/runtime/node"
+ node_bin="/Applications/Galaxy Scopez.app/Contents/Resources/runtime/node"
+ [[ -x "$node_bin" ]] || node_bin="/Applications/Ghetto Scopez.app/Contents/Resources/runtime/node"
 fi
 [[ -x "$node_bin" ]] || { echo 'Node runtime not found.'; exit 1; }
 echo 'Compile and validate Hue histogram Metal support; no installation.'

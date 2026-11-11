@@ -1,7 +1,16 @@
 #include <metal_stdlib>
 using namespace metal;
 #pragma clang fp contract(off)
-struct Config {uint width,height,x0,x1,y0,y1,levels,vs,n,ww,hb,tw,th,ns,nh,mask,shards,stride;float mn,mx,zoom,tx,ty,lo,hi,kr,kg,kb;uint offsets[13];uint iso;float hueCenter,hueWidth,satMin,satMax,lumaMin,lumaMax;float hueSatMin,hueSatMax,hueLumaMin,hueLumaMax;uint hueWeighted;};
+struct Config {uint width,height,x0,x1,y0,y1,levels,vs,n,ww,hb,tw,th,ns,nh,mask,shards,stride;float mn,mx,zoom,tx,ty,lo,hi,kr,kg,kb;uint offsets[13];uint iso;float hueCenter,hueWidth,satMin,satMax,lumaMin,lumaMax;float hueSatMin,hueSatMax,hueLumaMin,hueLumaMax;uint hueWeighted,pqWave;};
+
+float pqLinear(float v){
+ float p=pow(clamp(v,0.f,1.f),32.f/2523.f);
+ return pow(max(p-3424.f/4096.f,0.f)/(2413.f/128.f-2392.f/128.f*p),16384.f/2610.f);
+}
+float pqWaveLevel(float3 rgb){
+ if(!all(isfinite(rgb)))return NAN;
+ return sqrt((.2627f*pqLinear(rgb.r)+.6780f*pqLinear(rgb.g))+.0593f*pqLinear(rgb.b));
+}
 
 float3 colourHSV(float3 v){float hi=max(v.r,max(v.g,v.b)),lo=min(v.r,min(v.g,v.b)),d=hi-lo,h=0;if(d>0){h=hi==v.r?(v.g-v.b)/d:hi==v.g?(v.b-v.r)/d+2:(v.r-v.g)/d+4;h=fract(h/6+1);}return float3(h,hi>0?d/hi:0,hi);}
 bool colourSelected(float3 v,float l,constant Config&c){if(!c.iso)return true;if(!all(isfinite(v))||!isfinite(l))return false;float3 q=colourHSV(v);float distance=fmod(abs(q.x*360-c.hueCenter),360.f);return q.y>=c.satMin&&q.y<=c.satMax&&l>=c.lumaMin&&l<=c.lumaMax&&min(distance,360-distance)<=c.hueWidth;}
@@ -17,9 +26,9 @@ void sumCounter(device atomic_uint*s,uint at,uint v,uint lane){uint n=simd_sum(v
 kernel void analyze(device const float*rgb [[buffer(0)]],device atomic_uint*counts [[buffer(1)]],device atomic_uint*summaryInput [[buffer(2)]],constant Config&c [[buffer(3)]],uint threadId [[thread_position_in_grid]],uint lane [[thread_index_in_simdgroup]],uint group [[threadgroup_position_in_grid]],uint gridSize [[threads_per_grid]]){
  Meta m={};m.lo=uint4(0xffffffff);device atomic_uint*out=counts+(group%c.shards)*c.stride;uint rw=c.x1-c.x0,rh=c.y1-c.y0;
  for(uint item=0;item<8;item++){uint id=threadId+item*gridSize;if(id>=rw*rh)continue;uint x=c.x0+id%rw,y=c.y0+id/rw,at=(y*c.width+x)*3;float r=rgb[at],g=rgb[at+1],b=rgb[at+2],l=(c.kr*r+c.kg*g)+c.kb*b;if(!colourSelected(float3(r,g,b),l,c))continue;float4 val=float4(r,g,b,l);bool4 finite=isfinite(val);uint4 bits=as_type<uint4>(val),ordered=select(bits^0x80000000u,~bits,(bits&0x80000000u)!=0);m.lo=min(m.lo,select(uint4(0xffffffff),ordered,finite));m.hi=max(m.hi,select(uint4(0),ordered,finite));m.invalid+=uint4(!finite);m.under+=uint4(finite&&(val<0));m.over+=uint4(finite&&(val>1));m.vu+=uint4(finite&&(val<c.mn));m.vo+=uint4(finite&&(val>c.mx));
- if(c.mask&7){uint wx=min(c.ww-1,(x-c.x0)*c.ww/rw);for(uint ch=0;ch<4;ch++){if(ch<3&&!(c.mask&6))continue;float v=val[ch];if(isfinite(v)&&v>=c.mn&&v<=c.mx){uint iy=rnd((v-c.mn)/(c.mx-c.mn)*float(c.levels-1));if(ch==3)bin(out,c.offsets[0],iy*c.ww+wx);else{bin(out,c.offsets[1],(ch*c.levels+iy)*c.ww+wx);bin(out,c.offsets[2],ch*c.hb+rnd((v-c.mn)/(c.mx-c.mn)*float(c.hb-1)));}}}}
+ if(c.mask&7){uint wx=min(c.ww-1,(x-c.x0)*c.ww/rw);for(uint ch=0;ch<4;ch++){if(ch<3&&!(c.mask&6))continue;bool pq=ch==3&&c.pqWave;float v=pq?pqWaveLevel(float3(r,g,b)):val[ch],lo=pq?0:c.mn,hi=pq?1:c.mx;if(isfinite(v)&&v>=lo&&v<=hi){uint iy=rnd((v-lo)/(hi-lo)*float(c.levels-1));if(ch==3)bin(out,c.offsets[0],iy*c.ww+wx);else{bin(out,c.offsets[1],(ch*c.levels+iy)*c.ww+wx);bin(out,c.offsets[2],ch*c.hb+rnd((v-c.mn)/(c.mx-c.mn)*float(c.hb-1)));}}}}
 
- bool valid=isfinite(r)&&isfinite(g)&&isfinite(b);float u=(b-l)/(2*(1-c.kb)),v=(r-l)/(2*(1-c.kr)),extent=.5f/c.zoom;uint band=l<c.lo?0:l<c.hi?1:2;bool outside=valid&&(u< -extent||u>extent||v< -extent||v>extent);if(valid){m.splitPixels[band]++;m.splitOutside[band]+=outside;if(!outside){uint ix=rnd((u+extent)/(2*extent)*float(c.vs-1)),iy=rnd((v+extent)/(2*extent)*float(c.vs-1));bin(out,c.offsets[3],iy*c.vs+ix);bin(out,c.offsets[4+band],iy*c.vs+ix);}}
+ bool valid=isfinite(r)&&isfinite(g)&&isfinite(b);float u=(b-l)/(2*(1-c.kb)),v=(r-l)/(2*(1-c.kr)),extent=.5f/c.zoom,edge=extent+1.1920929e-7f;uint band=l<c.lo?0:l<c.hi?1:2;bool outside=valid&&(u< -edge||u>edge||v< -edge||v>edge);if(valid){m.splitPixels[band]++;m.splitOutside[band]+=outside;if(!outside){uint ix=rnd((u+extent)/(2*extent)*float(c.vs-1)),iy=rnd((v+extent)/(2*extent)*float(c.vs-1));bin(out,c.offsets[3],iy*c.vs+ix);bin(out,c.offsets[4+band],iy*c.vs+ix);}}
  for(uint pair=0;pair<2;pair++){float a=pair==0?b:r,dx=a-g,dy=pair==0?a+g:-(a+g);bool ok=isfinite(a)&&isfinite(g),off=ok&&(abs(dx)>c.tx||abs(dy)>c.ty);uint4 st=uint4(ok&&!off,off,!ok,ok&&(a<0||a>1||g<0||g>1));if(pair==0)m.upper+=st;else m.lower+=st;if(ok&&!off)bin(out,c.offsets[7],rnd((dy+c.ty)/(2*c.ty)*float(c.th-1))*c.tw+rnd((dx+c.tx)/(2*c.tx)*float(c.tw-1)));}
  if(c.mask&6144){float3 q=colourHSV(float3(r,g,b));if(valid&&isfinite(l)){if((c.mask&2048)&&l>=c.mn&&l<=c.mx&&q.y>=0&&q.y<=1)bin(out,c.offsets[11],rnd((l-c.mn)/(c.mx-c.mn)*float(c.ns-1))*c.ns+rnd(q.y*float(c.ns-1)));if((c.mask&4096)&&q.z>min(r,min(g,b))&&q.z>0&&q.z<=1&&min(r,min(g,b))>=0&&q.y>=c.hueSatMin&&q.y<=c.hueSatMax&&l>=c.hueLumaMin&&l<=c.hueLumaMax){uint weight=c.hueWeighted?rnd((q.z-min(r,min(g,b)))/max(c.hueSatMax,1e-12f)*255.f):1;inc(out,c.offsets[12]+min(c.nh-1,uint(floor(q.x*float(c.nh)))),weight);}}}
  if(c.mask&256){bool off=valid&&(r<c.mn||r>c.mx||g<c.mn||g>c.mx||b<c.mn||b>c.mx);m.cube+=uint3(valid&&!off,off,!valid);if(valid&&!off){float scale=float(c.n-1)/(c.mx-c.mn);uint ix=rnd((r-c.mn)*scale)+c.n*(rnd((g-c.mn)*scale)+c.n*rnd((b-c.mn)*scale));bin(out,c.offsets[8],ix);}}
@@ -41,7 +50,8 @@ kernel void waveformColour(device const float*rgb [[buffer(0)]],device uint*outp
  uint left=(wx*rw+c.ww-1)/c.ww,right=((wx+1)*rw+c.ww-1)/c.ww,cols=right-left;
  for(uint i=tid;i<cols*rh;i+=threads){uint x=c.x0+left+i%cols,y=c.y0+i/cols,at=(y*c.width+x)*3;
   float3 v=float3(rgb[at],rgb[at+1],rgb[at+2]);float l=(c.kr*v.r+c.kg*v.g)+c.kb*v.b;
-  if(colourSelected(v,l,c)&&all(isfinite(v))&&isfinite(l)&&l>=c.mn&&l<=c.mx){uint iy=rnd((l-c.mn)/(c.mx-c.mn)*float(c.levels-1));
+  float level=c.pqWave?pqWaveLevel(v):l,lo=c.pqWave?0:c.mn,hi=c.pqWave?1:c.mx;
+  if(colourSelected(v,l,c)&&all(isfinite(v))&&isfinite(level)&&level>=lo&&level<=hi){uint iy=rnd((level-lo)/(hi-lo)*float(c.levels-1));
    if(iy>=base&&iy<base+1024)for(uint ch=0;ch<3;ch++){uint q=rnd(clamp(v[ch],0.f,1.f)*255.f);if(q)atomic_fetch_add_explicit(local+ch*1024+iy-base,q,memory_order_relaxed);}
   }
  }

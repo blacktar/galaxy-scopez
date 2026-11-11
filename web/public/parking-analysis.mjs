@@ -15,7 +15,7 @@ export function parkingMeasurements(data,type,s,activeBins=()=>null){const c=dat
  if(data.wave?.length===c.waveWidth*c.levels)project(data.wave,(i,v)=>{wave[Math.floor(i/c.waveWidth)]+=v;waveTotal+=v;});
  const channels=type===10?[0]:type===11?[1]:type===12?[2]:[0,1,2],rgb=[1,2,8,10,11,12,13].includes(type);const levels=[];
  if(rgb&&hist?.length===hs*3)for(const ch of channels){const a=hist.subarray(ch*hs,(ch+1)*hs),st=data.stats[ch];levels.push([distributionQuantile(a,n,s.percent,true,c.min,c.max,st.viewportUnder,st.viewportOver),distributionQuantile(a,n,s.percent,false,c.min,c.max,st.viewportUnder,st.viewportOver)]);}
- else if(waveTotal||data.stats[3]?.viewportUnder||data.stats[3]?.viewportOver){const st=data.stats[3];levels.push([distributionQuantile(wave,n,s.percent,true,c.min,c.max,st.viewportUnder,st.viewportOver),distributionQuantile(wave,n,s.percent,false,c.min,c.max,st.viewportUnder,st.viewportOver)]);}
+ else if(data.measurement?.waveformUnit!=='pq-nits'&&(waveTotal||data.stats[3]?.viewportUnder||data.stats[3]?.viewportOver)){const st=data.stats[3];levels.push([distributionQuantile(wave,n,s.percent,true,c.min,c.max,st.viewportUnder,st.viewportOver),distributionQuantile(wave,n,s.percent,false,c.min,c.max,st.viewportUnder,st.viewportOver)]);}
  const hi=levels.map(x=>x[0]).filter(x=>x!==null),lo=levels.map(x=>x[1]).filter(x=>x!==null);let high=hi.length?Math.max(...hi):null,low=lo.length?Math.min(...lo):null;
  // Infinity means beyond configured viewport: use measured extrema, not an invented value.
  if(high===Infinity)high=Math.max(...(rgb?channels:[3]).map(i=>data.stats[i].max??-Infinity));if(low===-Infinity)low=Math.min(...(rgb?channels:[3]).map(i=>data.stats[i].min??Infinity));

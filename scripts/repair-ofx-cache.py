@@ -25,8 +25,8 @@ for name in ('OFXPluginCacheV2.xml', 'OFXPluginCache.xml'):
     if updated == text:
         print(f'No tap entry in {name}')
         continue
-    backup = path.with_name(name + '.ghetto-tap-backup-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
+    backup = path.with_name(name + '.gtap-backup-' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
     shutil.copy2(path, backup)
     path.write_text(updated)
     print(f'Removed only tap entry from {name}; backup: {backup}')
-print('Start Resolve to rescan Ghetto Tap.')
+print('Start Resolve to rescan GTap.')

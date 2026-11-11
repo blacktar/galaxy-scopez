@@ -23,7 +23,7 @@ if pgrep -x Resolve >/dev/null; then
  printf 'Please quit DaVinci Resolve. Setup will continue automatically when it closes.\n'
  while pgrep -x Resolve >/dev/null; do sleep 2; done
 fi
-staging="$(mktemp -d "${TMPDIR:-/tmp}/ghetto-scopez-install.XXXXXX")"
+staging="$(mktemp -d "${TMPDIR:-/tmp}/galaxy-scopez-install.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
 if [[ "$node_ready" != true ]]; then
  printf 'Downloading the official Node.js installer…\n'
@@ -55,5 +55,5 @@ sudo /bin/mkdir -p /Library/OFX/Plugins
 pgrep -x Resolve >/dev/null && fail 'Resolve reopened during setup. Close it and run Install again.'
 sudo /usr/bin/ditto "$staging/SignalLabTap.ofx.bundle" "$target"
 codesign --verify --deep --strict "$target"
-printf '\nInstalled. Starting Ghetto Scopez and opening the guide…\n'
+printf '\nInstalled. Starting Galaxy Scopez and opening the guide…\n'
 open -a Terminal "$PWD/Start.command"

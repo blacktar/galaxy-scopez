@@ -1,9 +1,9 @@
-# Ghetto Scopez + GTap
+# Galaxy Scopez + GTap
 
 Colour scopes from DaVinci Resolve in a browser on your local network.
-Made by **Vidar Andersen**. [Read the user guide](https://vidarandersen.com/dmz/ghettoscopez).
+Made by **Vidar Andersen**. [Read the user guide](https://vidarandersen.com/dmz/galaxyscopez/).
 
-[Download the Mac release](https://github.com/blacktar/ghetto-scopez/releases/latest)
+[Download the Mac release](https://github.com/blacktar/galaxy-scopez/releases/latest)
 
 ## Install and start
 
@@ -14,15 +14,15 @@ DaVinci Resolve is required. The new `.pkg` installer bundles the server,
 Node.js runtime, browser dependencies and prebuilt GTap; no developer tools or
 separate runtime installation are required.
 
-1. Quit Resolve and stop any older Ghetto Scopez host.
+1. Quit Resolve and stop any older Galaxy Scopez host.
 2. Open the Mac `.pkg` installer and enter your administrator password when asked.
-3. Double-click the desktop **Ghetto Scopez** alias to start the app or open its
+3. Double-click the desktop **Galaxy Scopez** alias to start the app or open its
    server controls. Use **GS** in the menu bar to open the viewer or guide, start/stop the server,
    show its log or quit. The server starts after installation and at login.
 4. Open Resolve, add GTap at the measurement point and choose the matching input.
    Open its panel’s network address on the other display.
 
-Open **Ghetto Scopez** from Applications to reopen the menu-bar app after quitting.
+Open **Galaxy Scopez** from Applications to reopen the menu-bar app after quitting.
 The installer is Developer ID signed and Apple-notarised. Installation has been
 confirmed working by the user. The earlier ZIP/Install.command package is
 retained as a legacy download.

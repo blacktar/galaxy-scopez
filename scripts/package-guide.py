@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a standalone upload-ready guide ZIP and a per-file checksum manifest."""
+"""Create a standalone upload-ready guide ZIP and a deployment manifest."""
 import json,os,re,stat,sys,zipfile
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
@@ -8,10 +8,10 @@ source=root/'web/public/guide'
 guide_version=(root/'web/GUIDE_VERSION').read_text().strip()
 if not re.fullmatch(re.escape(release['version'])+r'(?:-r[1-9][0-9]*)?',guide_version):raise SystemExit('Guide revision does not match the current viewer release')
 html=(source/'index.html').read_text()
-if f'Guide {guide_version} · Viewer {release["version"]} · GTap ' not in html:raise SystemExit('Stamp the visible guide release before packaging')
+if f'Viewer {release["version"]} · GTap ' not in html:raise SystemExit('Stamp the visible guide release before packaging')
 out=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else root/'build'
 out.mkdir(parents=True,exist_ok=True)
-stem=f'ghettoscopes_{release["date"]}_v{guide_version}'
+stem=f'galaxyscopez_{release["date"]}_v{guide_version}'
 files=sorted(p for p in source.rglob('*') if p.is_file() and p.name!='.DS_Store')
 manifest={'version':guide_version,'viewerVersion':release['version'],'date':release['date'],'entrypoint':'index.html','files':[]}
 payloads={}

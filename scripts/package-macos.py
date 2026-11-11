@@ -17,13 +17,13 @@ a=p.parse_args()
 def run(*cmd): subprocess.run([str(c) for c in cmd],check=True,cwd=root)
 version=(root/'web/VERSION').read_text().strip()
 # Sign outside file-provider folders, which may regenerate FinderInfo on bundles.
-work=Path('/private/tmp/ghetto-scopez-macos-installer')
-payload=work/'payload';app=payload/'Applications/Ghetto Scopez.app'
+work=Path('/private/tmp/galaxy-scopez-macos-installer')
+payload=work/'payload';app=payload/'Applications/Galaxy Scopez.app'
 contents=app/'Contents';resources=contents/'Resources';host=resources/'host'
 plugin=payload/'Library/OFX/Plugins'
 if not a.resume:
  if work.exists(): shutil.rmtree(work)
- payload=work/'payload';app=payload/'Applications/Ghetto Scopez.app'
+ payload=work/'payload';app=payload/'Applications/Galaxy Scopez.app'
  contents=app/'Contents';resources=contents/'Resources';host=resources/'host'
  for d in [contents/'MacOS',resources/'runtime',host/'web',host/'build',work/'scripts']:d.mkdir(parents=True,exist_ok=True)
  # Verify executable runtime archives against the official Node distribution manifest.
@@ -35,9 +35,9 @@ if not a.resume:
   shutil.copy2(a.runtime/'LICENSE',resources/'runtime/LICENSE')
  else:
   node_version='24.22.1'
-  manifest=(a.downloads/'ghetto-node-shasums.txt').read_text()
+  manifest=(a.downloads/'galaxy-node-shasums.txt').read_text()
   for arch in ['arm64','x64']:
-   archive=a.downloads/f'ghetto-node-{arch}.tar.gz'
+   archive=a.downloads/f'galaxy-node-{arch}.tar.gz'
    name=f'node-v{node_version}-darwin-{arch}.tar.gz'
    expected=next(line.split()[0] for line in manifest.splitlines() if line.split()[-1]==name)
    if hashlib.sha256(archive.read_bytes()).hexdigest()!=expected:raise SystemExit('Node checksum mismatch: '+arch)
@@ -67,18 +67,18 @@ if not a.resume:
  plugin=payload/'Library/OFX/Plugins';plugin.mkdir(parents=True)
  run('ditto','-x','-k',a.gtap.resolve(),plugin)
  for name in ['LICENSE','LICENSE-NOTICE.txt','THIRD-PARTY-NOTICES.txt']:shutil.copy2(root/name,resources/name)
- info={'CFBundleIdentifier':'com.vidarandersen.ghettoscopez','CFBundleName':'Ghetto Scopez','CFBundleDisplayName':'Ghetto Scopez','CFBundleExecutable':'GhettoScopez','CFBundleIconFile':'AppIcon.icns','CFBundlePackageType':'APPL','CFBundleShortVersionString':version,'CFBundleVersion':version,'LSMinimumSystemVersion':'27.0','LSUIElement':True,'NSHighResolutionCapable':True,'NSHumanReadableCopyright':'© 2026 Vidar Andersen'}
+ info={'CFBundleIdentifier':'com.vidarandersen.ghettoscopez','CFBundleName':'Galaxy Scopez','CFBundleDisplayName':'Galaxy Scopez','CFBundleExecutable':'GalaxyScopez','CFBundleIconFile':'AppIcon.icns','CFBundlePackageType':'APPL','CFBundleShortVersionString':version,'CFBundleVersion':version,'LSMinimumSystemVersion':'27.0','LSUIElement':True,'NSHighResolutionCapable':True,'NSHumanReadableCopyright':'© 2026 Vidar Andersen'}
  shutil.copy2(root/'installer/AppIcon.icns',resources/'AppIcon.icns')
  (contents/'Info.plist').write_bytes(plistlib.dumps(info))
  for arch in ['arm64','x86_64']:
   run('xcrun','swiftc','-O','-target',arch+'-apple-macos27.0','-module-cache-path',work/'swift-cache','-framework','AppKit',root/'installer/HostApp.swift','-o',work/('launcher-'+arch))
- run('lipo','-create',work/'launcher-arm64',work/'launcher-x86_64','-output',contents/'MacOS/GhettoScopez')
+ run('lipo','-create',work/'launcher-arm64',work/'launcher-x86_64','-output',contents/'MacOS/GalaxyScopez')
  agent=payload/'Library/LaunchAgents/com.vidarandersen.ghettoscopez.plist';agent.parent.mkdir(parents=True,exist_ok=True)
- agent.write_bytes(plistlib.dumps({'Label':'com.vidarandersen.ghettoscopez','ProgramArguments':['/Applications/Ghetto Scopez.app/Contents/MacOS/GhettoScopez'],'RunAtLoad':True,'LimitLoadToSessionType':'Aqua','ProcessType':'Interactive'}))
+ agent.write_bytes(plistlib.dumps({'Label':'com.vidarandersen.ghettoscopez','ProgramArguments':['/Applications/Galaxy Scopez.app/Contents/MacOS/GalaxyScopez'],'RunAtLoad':True,'LimitLoadToSessionType':'Aqua','ProcessType':'Interactive'}))
  (work/'scripts/preinstall').write_text('''#!/bin/bash
  set -euo pipefail
  if /usr/bin/pgrep -x Resolve >/dev/null; then
-  echo 'Quit DaVinci Resolve before installing Ghetto Scopez.' >&2
+  echo 'Quit DaVinci Resolve before installing Galaxy Scopez.' >&2
   exit 1
  fi
  if [[ -e /Library/OFX/Plugins/SignalLabTap.ofx.bundle ]]; then
@@ -89,22 +89,39 @@ if not a.resume:
  if [[ "$uid" -ge 501 ]]; then
   /bin/launchctl bootout "gui/$uid/com.vidarandersen.ghettoscopez" 2>/dev/null || true
  fi
+ # Move the previous signed app into the new package path before the payload
+ # is installed. Leave unrelated bundles and existing destinations alone.
+ old='/Applications/Ghetto Scopez.app'
+ new='/Applications/Galaxy Scopez.app'
+ if [[ -e "$new" || -L "$new" ]]; then
+  new_id=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$new/Contents/Info.plist" 2>/dev/null || true)
+  if [[ -L "$new" || "$new_id" != com.vidarandersen.ghettoscopez ]]; then
+   echo 'An unrelated item already exists at the Galaxy Scopez application path.' >&2
+   exit 1
+  fi
+ fi
+ if [[ -d "$old" && ! -L "$old" && ! -e "$new" && ! -L "$new" ]]; then
+  old_id=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$old/Contents/Info.plist" 2>/dev/null || true)
+  if [[ "$old_id" == com.vidarandersen.ghettoscopez ]]; then
+   /bin/mv "$old" "$new"
+  fi
+ fi
  ''')
  (work/'scripts/postinstall').write_text('''#!/bin/bash
  set -euo pipefail
  uid=$(/usr/bin/stat -f %u /dev/console)
  if [[ "$uid" -ge 501 ]]; then
   username=$(/usr/bin/id -nu "$uid")
-  /bin/launchctl asuser "$uid" /usr/bin/sudo -H -u "$username" '/Applications/Ghetto Scopez.app/Contents/MacOS/GhettoScopez' --create-desktop-alias || echo 'Desktop shortcut could not be created; open Ghetto Scopez from Applications.'
+  /bin/launchctl asuser "$uid" /usr/bin/sudo -H -u "$username" '/Applications/Galaxy Scopez.app/Contents/MacOS/GalaxyScopez' --create-desktop-alias || echo 'Desktop shortcut could not be created; open Galaxy Scopez from Applications.'
   /bin/launchctl bootstrap "gui/$uid" /Library/LaunchAgents/com.vidarandersen.ghettoscopez.plist || {
-   echo 'Open Ghetto Scopez from Applications to start the server.'
+   echo 'Open Galaxy Scopez from Applications to start the server.'
   }
  fi
  exit 0
  ''')
 for f in payload.rglob('*'):
  if f.is_dir():f.chmod(0o755)
- elif f.name in ['node','GhettoScopez','SignalLabTap.ofx']:f.chmod(0o755)
+ elif f.name in ['node','GalaxyScopez','SignalLabTap.ofx']:f.chmod(0o755)
  else:f.chmod(0o644)
 for f in (work/'scripts').iterdir():f.chmod(0o755)
 # Strip Finder metadata from staging only; preserve quarantine/security attributes.
@@ -135,7 +152,7 @@ run('pkgbuild','--root',payload,'--component-plist',components,'--scripts',work/
 dist=work/'Distribution.xml'
 dist.write_text(f'''<?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-<title>Ghetto Scopez</title>
+<title>Galaxy Scopez</title>
 <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
 <domains enable_localSystem="true" enable_currentUserHome="false" enable_anywhere="false"/>
 <allowed-os-versions><os-version min="27.0"/></allowed-os-versions>
@@ -149,9 +166,9 @@ dist.write_text(f'''<?xml version="1.0" encoding="utf-8"?>
 </installer-gui-script>''')
 ui=work/'ui';ui.mkdir(exist_ok=True)
 shutil.copy2(root/'LICENSE',ui/'LICENSE.txt')
-(ui/'welcome.html').write_text('<html><body><h1>Ghetto Scopez</h1><p>Install GTap for DaVinci Resolve and the Ghetto Scopez menu-bar app, including its server and runtime.</p><p><b>Quit DaVinci Resolve before continuing.</b> macOS 27 or later required.</p><p>The server starts after installation and at login. It serves scopes on your local network on port 8765.</p></body></html>')
-(ui/'conclusion.html').write_text('<html><body><h1>Ghetto Scopez is installed</h1><p>Double-click the desktop Ghetto Scopez icon to open the app and server controls. Use <b>GS</b> in the menu bar to open the viewer or guide, and start or stop the server. Open Ghetto Scopez in Applications if the menu is absent.</p><p>Quit an older Terminal-based host before starting this server. Allow local network access if macOS asks. Open DaVinci Resolve and add GTap.</p></body></html>')
-out=root.parent/f'Ghetto-Scopez-{version}-mac.pkg'
+(ui/'welcome.html').write_text('<html><body><h1>Galaxy Scopez</h1><p>Install GTap for DaVinci Resolve and the Galaxy Scopez menu-bar app, including its server and runtime.</p><p><b>Quit DaVinci Resolve before continuing.</b> macOS 27 or later required.</p><p>The server starts after installation and at login. It serves scopes on your local network on port 8765.</p></body></html>')
+(ui/'conclusion.html').write_text('<html><body><h1>Galaxy Scopez is installed</h1><p>Double-click the desktop Galaxy Scopez icon to open the app and server controls. Use <b>GS</b> in the menu bar to open the viewer or guide, and start or stop the server. Open Galaxy Scopez in Applications if the menu is absent.</p><p>Quit an older Terminal-based host before starting this server. Allow local network access if macOS asks. Open DaVinci Resolve and add GTap.</p></body></html>')
+out=root.parent/f'Galaxy-Scopez-{version}-mac.pkg'
 run('productbuild','--distribution',dist,'--package-path',work,'--resources',ui,'--sign',a.installer_identity,'--timestamp',out)
 out.chmod(0o644)
 run('pkgutil','--check-signature',out)

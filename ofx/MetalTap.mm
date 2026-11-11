@@ -13,7 +13,7 @@ namespace tap {
 namespace {
 // This queue owns retained readback buffers until copying and delivery finish.
 // The OFX producer's three-frame budget includes delivery through its callback.
-dispatch_queue_t readbackQueue(){static dispatch_queue_t queue=dispatch_queue_create("local.ghettoscopez.tap.readback",DISPATCH_QUEUE_SERIAL);return queue;}
+dispatch_queue_t readbackQueue(){static dispatch_queue_t queue=dispatch_queue_create("local.galaxyscopez.tap.readback",DISPATCH_QUEUE_SERIAL);return queue;}
 void finishCommand();
 std::mutex completionMutex;std::condition_variable completionCV;size_t outstanding=0;
 void finishCommand(){{std::lock_guard<std::mutex>lock(completionMutex);outstanding--;}completionCV.notify_all();}
@@ -70,7 +70,7 @@ bool metalCopyAndCaptureShared(void*q,void*s,void*d,const MetalLayout&l,MetalSha
  int width=l.window.x2-l.window.x1,height=l.window.y2-l.window.y1;if(width<1||height<1)return false;
  auto states=pipelines(queue.device);Params p;std::memcpy(p.src,&l.source,16);std::memcpy(p.dst,&l.destination,16);std::memcpy(p.win,&l.window,16);p.srcRow=l.sourceRowBytes/4;p.dstRow=l.destinationRowBytes/4;
  // Normal command buffers retain referenced host buffers until GPU work completes.
- id<MTLCommandBuffer> command=[queue commandBuffer];command.label=@"Ghetto Scopez exact pass-through";
+ id<MTLCommandBuffer> command=[queue commandBuffer];command.label=@"Galaxy Scopez exact pass-through";
  id<MTLBuffer> readback=nil;size_t words=0;std::shared_ptr<ReadbackLease> lease;
  if(capture){words=size_t(l.source.x2-l.source.x1)*(l.source.y2-l.source.y1)*3;lease=acquireReadback(queue.device,words*4);if(lease)readback=lease->slot->buffer;}
  const bool combined=readback&&std::memcmp(&l.source,&l.destination,sizeof(MetalRect))==0&&std::memcmp(&l.source,&l.window,sizeof(MetalRect))==0;
