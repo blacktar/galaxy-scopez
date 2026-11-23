@@ -1,29 +1,24 @@
 # Galaxy Scopez 0.3.0 — GPrime
 
-Grade by touch with GPrime: linear Exposure, native Contrast, Balance on a live
-vectorscope, and HSV saturation through Gamma and Gain, including simultaneous
-two-finger input. Bind each control to a node in your own tree, or import the
-included GPrime clip PowerGrade before grading your clips.
+Turn your tablet into a multitouch grading surface for DaVinci Resolve.
 
-GPrime includes independent sensitivity and undo, clip navigation, Apply Grade
-from One/Two Clips Prior with native Undo, Clip Fullscreen, and a one-second
-hold-to-scrub strip for parking on the hero frame. Its optional clip background
-refreshes after navigation or scrubbing. Multiple displays can connect together.
+- **GPrime:** linear Exposure, native Contrast, colour Balance on a live vectorscope, and HSV Saturation Gamma/Gain. Use both saturation ribbons together.
+- Bind four nodes in your existing tree, or import the included **GPrime Node Tree v1 PowerGrade** before grading.
+- Independent touch sensitivity and undo for each grading control.
+- Previous/Next Clip, Apply Grade from One/Two Clips Prior, native Undo and Clip Fullscreen.
+- Hold the clip strip for **one second**, then scrub and park on the hero. The optional clip background updates after navigation and scrubbing.
+- Open viewers on multiple displays; grading commands run in order.
+- **Scopez Quest** replaces the OG name. **Galaxy Synth (experimental)** replaces OG Synth, with hue → pitch, brightness → volume and saturation → vibrato.
+- Refined Controls tab styling and GPrime vectorscope zoom, detail, smoothing and transparent trace rendering.
+- **GTap 1.2.29:** new instances default to BT.709 encoded input. The plug-in's internal ID stays unchanged.
 
-The game is now Scopez Quest; the experimental instrument is Galaxy Synth.
-Galaxy Synth maps hue to pitch, brightness to volume and saturation to vibrato.
-Controls tab styling and GPrime zoom, detail and smoothing behavior are refined.
-The Mac app bundles the runtime required by the grading connection.
+GPrime was tested with **DaVinci Resolve Studio 21.2 on Apple silicon and iPad Safari**. It requires Resolve's Local external scripting and Galaxy Scopez's native-control permission. The Mac installer includes its required runtimes; no separate Python installation is needed.
 
-GPrime tested with DaVinci Resolve Studio21.2 on Apple silicon and iPad Safari.
-GTap remains1.2.28. Resolve Local external scripting and the macOS permission for
-Galaxy Scopez's native controls must be enabled for grading/clip shortcuts.
+macOS 27 or later. Quit Resolve and stop the older host before installing.
 
-Release preparation only: guide visual approval and final notarization/publication
-remain pending. Higher vectorscope detail research remains paused.
+[User guide](https://vidarandersen.com/dmz/galaxyscopez/)
 
-Validation:197/197 web tests using signed Node24/native kernel,75 offline Python
-grading tests, four guide viewport checks and local asset/JSON-LD/PowerGrade checks
-pass. Signed installer built. Apple notarization blocked by HTTP403 pending
-developer-team agreement; user must accept at developer.apple.com/account/.
-Guide approved by the user; cumulative guide diff prepared. Final GTap1.2.29 installer notarization and publication in progress.
+Validation: 197 web tests and 75 offline grading tests pass. The universal
+installer is Developer ID signed, notarized, stapled and accepted by Gatekeeper.
+The PowerGrade passes the recorded structural checks; the user validated the
+GPrime controls on iPad.
