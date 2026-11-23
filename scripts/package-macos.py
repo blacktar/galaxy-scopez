@@ -12,6 +12,7 @@ p.add_argument('--application-identity',default='Developer ID Application: Vidar
 p.add_argument('--installer-identity',default='Developer ID Installer: Vidar Andersen (CMRVMTA2G5)')
 p.add_argument('--runtime',type=Path,help='Reuse a verified installed universal Node runtime directory')
 p.add_argument('--gtap',type=Path,required=True,help='Exact GTap bundle ZIP for this release')
+p.add_argument('--python-runtime',type=Path,default=Path('/private/tmp/galaxy-python-runtime'),help='Verified relocated Python.org universal2 runtime directory')
 p.add_argument('--resume',action='store_true',help='Reuse staged payload after a signing-only failure')
 a=p.parse_args()
 def run(*cmd): subprocess.run([str(c) for c in cmd],check=True,cwd=root)
@@ -48,11 +49,18 @@ if not a.resume:
   run('lipo','-create',work/'arm64-node',work/'x64-node','-output',resources/'runtime/node')
   (resources/'runtime/node').chmod(0o755)
   shutil.copy2(work/'arm64-LICENSE',resources/'runtime/LICENSE')
+ # GPrime uses a private Python runtime; never depend on Xcode or system Python.
+ if not (a.python_runtime/'python3').is_file():raise SystemExit('Prepare the private Python runtime first; see scripts/prepare-python-runtime.py')
+ shutil.copytree(a.python_runtime/'Python.framework',resources/'runtime/Python.framework',symlinks=True)
+ (resources/'runtime/python3').symlink_to('Python.framework/Versions/3.14/bin/python3.14')
  # Ship production host modules, browser assets and pinned dependencies, not tests/tooling.
  for f in (root/'web').glob('*.mjs'):
   if not f.name.endswith('.test.mjs'):shutil.copy2(f,host/'web'/f.name)
  for f in ['package.json','VERSION']:shutil.copy2(root/'web'/f,host/'web'/f)
- shutil.copytree(root/'web/public',host/'web/public')
+ shutil.copytree(root/'web/public',host/'web/public',ignore=shutil.ignore_patterns('vector-detail-bench.html','vector-detail-bench.mjs','vector-detail-data'))
+ (host/'scripts').mkdir()
+ for name in ['native-grade-worker.py','gprime-grading.py','gprime-actions.py','contrast-panel-bridge.py','native-contrast-panel-test.py','grading-session.mjs']:
+  shutil.copy2(root/'scripts'/name,host/'scripts'/name)
  for name in ['ws','nosleep.js','three']:
   source=root/'web/node_modules'/name
   if json.loads((source/'package.json').read_text())['version']!=json.loads((root/'web/package.json').read_text())['dependencies'][name]:raise SystemExit('Dependency mismatch: '+name)
@@ -66,12 +74,14 @@ if not a.resume:
  shutil.copy2(root/'release/scope-analysis.node',host/'build/scope-analysis.node')
  plugin=payload/'Library/OFX/Plugins';plugin.mkdir(parents=True)
  run('ditto','-x','-k',a.gtap.resolve(),plugin)
+ shutil.copytree(root/'release/runtime-licences',resources/'runtime-licences')
+ shutil.copytree(root/'release/GPrime_Node_Tree_v1',resources/'PowerGrades/GPrime_Node_Tree_v1')
  for name in ['LICENSE','LICENSE-NOTICE.txt','THIRD-PARTY-NOTICES.txt']:shutil.copy2(root/name,resources/name)
  info={'CFBundleIdentifier':'com.vidarandersen.ghettoscopez','CFBundleName':'Galaxy Scopez','CFBundleDisplayName':'Galaxy Scopez','CFBundleExecutable':'GalaxyScopez','CFBundleIconFile':'AppIcon.icns','CFBundlePackageType':'APPL','CFBundleShortVersionString':version,'CFBundleVersion':version,'LSMinimumSystemVersion':'27.0','LSUIElement':True,'NSHighResolutionCapable':True,'NSHumanReadableCopyright':'© 2026 Vidar Andersen'}
  shutil.copy2(root/'installer/AppIcon.icns',resources/'AppIcon.icns')
  (contents/'Info.plist').write_bytes(plistlib.dumps(info))
  for arch in ['arm64','x86_64']:
-  run('xcrun','swiftc','-O','-target',arch+'-apple-macos27.0','-module-cache-path',work/'swift-cache','-framework','AppKit',root/'installer/HostApp.swift','-o',work/('launcher-'+arch))
+  run('xcrun','swiftc','-O','-target',arch+'-apple-macos27.0','-module-cache-path',work/'swift-cache','-framework','AppKit',root/'installer/HostApp.swift',root/'installer/NativeResolveControl.swift','-o',work/('launcher-'+arch))
  run('lipo','-create',work/'launcher-arm64',work/'launcher-x86_64','-output',contents/'MacOS/GalaxyScopez')
  agent=payload/'Library/LaunchAgents/com.vidarandersen.ghettoscopez.plist';agent.parent.mkdir(parents=True,exist_ok=True)
  agent.write_bytes(plistlib.dumps({'Label':'com.vidarandersen.ghettoscopez','ProgramArguments':['/Applications/Galaxy Scopez.app/Contents/MacOS/GalaxyScopez'],'RunAtLoad':True,'LimitLoadToSessionType':'Aqua','ProcessType':'Interactive'}))
@@ -121,7 +131,7 @@ if not a.resume:
  ''')
 for f in payload.rglob('*'):
  if f.is_dir():f.chmod(0o755)
- elif f.name in ['node','GalaxyScopez','SignalLabTap.ofx']:f.chmod(0o755)
+ elif f.name in ['node','GalaxyScopez','SignalLabTap.ofx'] or f.stat().st_mode & 0o111:f.chmod(0o755)
  else:f.chmod(0o644)
 for f in (work/'scripts').iterdir():f.chmod(0o755)
 # Strip Finder metadata from staging only; preserve quarantine/security attributes.
@@ -133,6 +143,15 @@ def sign(path,entitlements=None):
  cmd=['codesign','--force','--timestamp','--options','runtime','--sign',a.application_identity]
  if entitlements:cmd+=['--entitlements',entitlements]
  run(*cmd,path)
+# Sign private Python extensions inside out before their framework and app containers.
+python=resources/'runtime/Python.framework'
+magic={b'\xfe\xed\xfa\xce',b'\xce\xfa\xed\xfe',b'\xfe\xed\xfa\xcf',b'\xcf\xfa\xed\xfe',b'\xca\xfe\xba\xbe',b'\xbe\xba\xfe\xca'}
+for f in sorted(python.rglob('*'),key=lambda p:len(p.parts),reverse=True):
+ if f.is_symlink() or not f.is_file():continue
+ with f.open('rb') as h:native=h.read(4) in magic
+ if native:sign(f,root/'installer/python-entitlements.plist' if f.name in ('python3.14','Python') and ('bin' in f.parts or 'MacOS' in f.parts) else None)
+sign(python/'Versions/3.14/Resources/Python.app',root/'installer/python-entitlements.plist')
+sign(python)
 sign(resources/'runtime/node',root/'installer/node-entitlements.plist')
 sign(host/'build/scope-analysis.node')
 sign(plugin/'SignalLabTap.ofx.bundle')
@@ -167,7 +186,7 @@ dist.write_text(f'''<?xml version="1.0" encoding="utf-8"?>
 ui=work/'ui';ui.mkdir(exist_ok=True)
 shutil.copy2(root/'LICENSE',ui/'LICENSE.txt')
 (ui/'welcome.html').write_text('<html><body><h1>Galaxy Scopez</h1><p>Install GTap for DaVinci Resolve and the Galaxy Scopez menu-bar app, including its server and runtime.</p><p><b>Quit DaVinci Resolve before continuing.</b> macOS 27 or later required.</p><p>The server starts after installation and at login. It serves scopes on your local network on port 8765.</p></body></html>')
-(ui/'conclusion.html').write_text('<html><body><h1>Galaxy Scopez is installed</h1><p>Double-click the desktop Galaxy Scopez icon to open the app and server controls. Use <b>GS</b> in the menu bar to open the viewer or guide, and start or stop the server. Open Galaxy Scopez in Applications if the menu is absent.</p><p>Quit an older Terminal-based host before starting this server. Allow local network access if macOS asks. Open DaVinci Resolve and add GTap.</p></body></html>')
+(ui/'conclusion.html').write_text('<html><body><h1>Galaxy Scopez is installed</h1><p>Double-click the desktop Galaxy Scopez icon to open the app and server controls. Use <b>GS</b> in the menu bar to open the viewer or guide, and start or stop the server. Open Galaxy Scopez in Applications if the menu is absent.</p><p>Quit an older Terminal-based host before starting this server. Allow local network access if macOS asks. Open DaVinci Resolve and add GTap.</p><p>For GPrime grading, enable Local external scripting in Resolve, then choose <b>GS → Enable Resolve controls…</b> and grant Galaxy Scopez its macOS permission. Follow the user guide to import the supplied PowerGrade and assign its nodes.</p></body></html>')
 out=root.parent/f'Galaxy-Scopez-{version}-mac.pkg'
 run('productbuild','--distribution',dist,'--package-path',work,'--resources',ui,'--sign',a.installer_identity,'--timestamp',out)
 out.chmod(0o644)

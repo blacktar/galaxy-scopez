@@ -1,1 +1,1 @@
-export const RELEASE={"version": "0.2.68", "date": "20261111"};
+export const RELEASE={"version": "0.3.0", "date": "20261123"};

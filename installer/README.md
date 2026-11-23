@@ -30,3 +30,13 @@ Apple Silicon on an isolated port; Finder alias resolves; signed package accepte
 by Apple, ticket stapled/validated, Gatekeeper install assessment accepted.
 Installation confirmed working by the user on 2026-10-25. This confirmation
 does not separately establish upgrade, subsequent-login or Intel-hardware coverage.
+
+Native GPrime controls (development0.2.71): the signed Galaxy Scopez app now executes the five productivity commands through public Accessibility APIs. Use GS → Enable Resolve controls… and grant permission to Galaxy Scopez. Terminal/System Events is no longer used for these buttons. The app owns the managed host; CLI control remains available. Development launch uses the editable host via --development-host; production uses bundled files and user-writable state outside the signed bundle. Actual Resolve button behavior is awaiting user validation; see docs/reverse-scopes/NATIVE-APP-CONTROLS-20261123.md for build, running-state and release prerequisites.
+
+0.3.0 packaging includes the private Python.org 3.14.10 universal2 runtime,
+relocated inside the app, its component licences, and the GPrime PowerGrade.
+Prepare it with scripts/prepare-python-runtime.py from the verified official
+installer payload; scripts/finish-official-release.command performs this step.
+The Python executables use disable-library-validation to load Resolve's own
+scripting module. GPrime requires Local external scripting in Resolve. The
+installer does not change Resolve preferences or macOS privacy permissions.

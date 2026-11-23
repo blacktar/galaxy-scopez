@@ -22,3 +22,16 @@ test('rectangular vectorscope retains equal axis scale and magnified traces beyo
  assert.ok(xs.length);assert.ok(Math.min(...xs)>250,'trace must cross former square edge');assert.ok(Math.max(...xs)<400);assert.ok(Math.abs((Math.min(...ys)+Math.max(...ys))/2-49.5)<2);
  const tall=renderSoftware(d,3,100,400,undefined,{vectorMagnification:1});const neutral=renderSoftware({...d,vector:new Uint32Array(n*n)},3,100,400);assert.ok(tall.some((v,i)=>v>neutral[i]));
 });
+
+test('GPrime trace opacity follows intensity without a dark fringe or backing',()=>{
+ const d=analyzeFrame(makeFixture('bars'),{bits:10});
+ const opaque=renderSoftware(d,3,64,64,{gain:1,brightness:100},{background:0});
+ const transparent=renderSoftware(d,3,64,64,{gain:1,brightness:100},{background:0,transparentBackground:true});
+ let clear=0,ink=0;
+ for(let at=0;at<opaque.length;at+=4){
+  for(let ch=0;ch<3;ch++)assert.ok(Math.abs(transparent[at+ch]*transparent[at+3]/255-opaque[at+ch])<=1);
+  const empty=opaque[at]===0&&opaque[at+1]===0&&opaque[at+2]===0;
+  assert.equal(transparent[at+3],Math.max(...opaque.subarray(at,at+3)));if(empty)clear++;else ink++;
+ }
+ assert.ok(clear>0);assert.ok(ink>0);
+});

@@ -1,6 +1,6 @@
 import {activeScopeBins} from './scope-wire.mjs';
 import {calibratedTargets} from './signal.mjs';
-// OG's state machine consumes exact vectorscope counts; display gain never scores.
+// Scopez Quest's state machine consumes exact vectorscope counts; display gain never scores.
 export const OG_SCOPE=16;
 export const OG_MAGNIFICATION=2;
 export function ogDisplaySettings(saved){return {zoom:[1,2,3,4].includes(saved?.zoom)?saved.zoom:2,detail:[1,2,3,4].includes(saved?.detail)?saved.detail:4};}

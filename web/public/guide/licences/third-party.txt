@@ -140,3 +140,37 @@ zlib — https://zlib.net/zlib_license.html
 
 */
 
+
+Scopez Quest celebration music — Monday
+-----------------------------
+Monday by Edvin Fladen, aka Random Voice, April 1991.
+Original module: web/public/assets/random-voice-monday.mod
+Browser playback: web/public/assets/random-voice-monday.m4a
+Original module rendered to stereo AAC for local browser playback; composition
+unchanged. Copyright remains with Edvin Fladen / Random Voice.
+Included with the project owner's confirmation of the composer's permission
+(2026-10-26); not relicensed under the project's CC BY-NC-SA 4.0 licence.
+Source record: https://modarchive.org/index.php?query=164407&request=view_by_moduleid
+Downloaded from: https://modland.com/pub/modules/Protracker/Random%20Voice/monday.mod
+
+Python 3.14.10 (private universal2 runtime)
+Copyright Python Software Foundation and contributors. PSF License Version 2
+and the component notices in runtime/Python.framework/Versions/3.14/lib/python3.14/LICENSE.txt.
+Source and official installer: https://www.python.org/downloads/release/python-31410/
+The headless runtime omits Tcl/Tk and IDLE; framework dependencies are relocated
+inside the app. No separate Python installation is required.
+
+The Python runtime includes OpenSSL, SQLite, XZ, libmpdec, NCurses and
+Zstandard; their full notices accompany the application in runtime-licences/.
+Tcl/Tk is omitted from this headless runtime. Python source modules retain
+their upstream copyright notices.
+
+Science Gothic — Font Detective LLC, SIL Open Font License 1.1.
+Used for the guide headline; served through Google Fonts. Full notice in
+web/public/guide/licences/science-gothic.txt.
+Amazing Glass — Ivan Tomac, MIT; adapted for the guide's teaser button.
+Full notice in web/public/guide/licences/amazing-glass.txt.
+GPrime workflow and node structure inspired by Cullen Kelly:
+https://www.youtube.com/@CullenKelly — https://cullenkellycolor.com/
+Referent LUT is referenced by the supplied DRX but is not bundled:
+https://cullenkellycolor.com/toolkit/referent

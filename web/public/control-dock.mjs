@@ -1,15 +1,20 @@
+export function controlDockPosition({handle,parent,dockWidth,viewportWidth,fullscreen}){
+ const half=dockWidth/2,center=(handle.left+handle.right)/2;
+ const left=Math.max(half+14,Math.min(viewportWidth-half-14,center));
+ return {top:handle.bottom-1-(fullscreen?0:parent.top),left:left-(fullscreen?0:parent.left)};
+}
 export function dockMayHide({fullscreen,settings,dragging,hovering,keyboardFocus}){return !settings&&!dragging&&!hovering&&!keyboardFocus;}
 export function bindControlDock({doc=document,idleMs=3000}={}){
  const body=doc.body,dock=doc.getElementById('fullscreencontrols'),panel=doc.getElementById('panel'),handle=doc.createElement('button');handle.id='controlhandle';handle.className='quiet';handle.type='button';handle.setAttribute('aria-controls','fullscreencontrols');dock.parentElement.append(handle);
  let timer,keyboard=false,hovering=false;const pointers=new Set();
  // Place the disclosure between the two tabs without moving it into the tablist.
  const tabs=doc.querySelector('header>.view-tabs');
- const alignHandle=()=>{if(!tabs)return;const r=tabs.getBoundingClientRect(),h=dock.parentElement.getBoundingClientRect();dock.parentElement.style.setProperty('--control-center',`${r.left+r.width/2-h.left}px`);};
- const resize=new ResizeObserver(alignHandle);resize.observe(dock.parentElement);if(tabs)resize.observe(tabs);alignHandle();
+ const alignHandle=()=>{if(!tabs)return;const r=tabs.getBoundingClientRect(),h=dock.parentElement.getBoundingClientRect(),style=dock.parentElement.style;style.setProperty('--control-center',`${r.left+r.width/2-h.left}px`);const p=controlDockPosition({handle:handle.getBoundingClientRect(),parent:h,dockWidth:dock.getBoundingClientRect().width,viewportWidth:doc.documentElement.clientWidth,fullscreen:body.classList.contains('monitor')});style.setProperty('--control-dock-top',`${p.top}px`);style.setProperty('--control-dock-left',`${p.left}px`);};
+ const resize=new ResizeObserver(alignHandle);resize.observe(dock.parentElement);if(tabs)resize.observe(tabs);resize.observe(handle);resize.observe(dock);alignHandle();
 
  const full=()=>body.classList.contains('monitor');
  const blocked=()=>!dockMayHide({fullscreen:full(),settings:!panel.hidden,dragging:pointers.size>0,hovering,keyboardFocus:keyboard&&dock.contains(doc.activeElement)});
- function state(hidden){body.classList.toggle('controls-tucked',hidden);dock.inert=hidden;handle.textContent='Controls';handle.setAttribute('aria-expanded',String(!hidden));handle.setAttribute('aria-label',hidden?'Show grading controls':'Hide grading controls');handle.title=hidden?'Show controls':'Hide controls';}
+ function state(hidden){body.classList.toggle('controls-tucked',hidden);dock.inert=hidden;handle.textContent='Controls';handle.setAttribute('aria-expanded',String(!hidden));handle.setAttribute('aria-label',hidden?'Show grading controls':'Hide grading controls');handle.title=hidden?'Show controls':'Hide controls';alignHandle();}
  function hide(){clearTimeout(timer);if(!blocked())state(true);}
  function schedule(){clearTimeout(timer);if(!blocked())timer=setTimeout(hide,idleMs);}
  function reveal(){state(false);schedule();}

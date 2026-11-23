@@ -1,3 +1,4 @@
+import {gradeAudition} from './grade-audition.mjs';
 import {nativeCRC,nativeIngest,nativeIngestStats} from './native-analysis.mjs';
 import {LiveSource} from './live-source.mjs';import {MAX_INPUT,decodeInput} from './resolve-input.mjs';
 import http from 'node:http';import https from 'node:https';import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {fileURLToPath} from 'node:url';import {performance} from 'node:perf_hooks';import {WebSocketServer} from 'ws';import {encode,decode,fixture} from './public/protocol.mjs';
@@ -10,7 +11,11 @@ function frameFor(kind,tick,config){const key=kind+JSON.stringify(config),old=sc
 const diagnostics=process.env.SCOPE_DIAGNOSTICS==='1';
 const fpsReports=[],results=[],clientErrors=[],viewers=new Map();let nextClient=1;
 const root=path.dirname(fileURLToPath(import.meta.url));
-const handler=(req,res)=>{const name=new URL(req.url,'http://local').pathname;if(!diagnostics&&['/api/results','/api/resolve/status','/api/resolve/snapshot'].includes(name)){res.writeHead(404).end('Diagnostics disabled');return;}if(name==='/api/tap-analysis'){
+const grading=process.env.GS_GRADING_AUDITION==='1'?gradeAudition(root):null;
+const handler=(req,res)=>{const name=new URL(req.url,'http://local').pathname;if(name==='/api/grade-audition'){
+ if(!grading){res.writeHead(404).end('Grading audition is disabled');return;}
+ void grading.handle(req,res);return;
+}if(!diagnostics&&['/api/results','/api/resolve/status','/api/resolve/snapshot'].includes(name)){res.writeHead(404).end('Diagnostics disabled');return;}if(name==='/api/tap-analysis'){
  if(req.method!=='GET'||!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)||req.headers.origin){res.writeHead(403).end();return;}
  const configs=[...live.wanted].filter(([key])=>Date.now()-(live.requestedAt.get(key)??0)<2000).map(([,c])=>c);const text=JSON.stringify(configs);res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store','Content-Length':Buffer.byteLength(text)}).end(text);return;
  }if(name==='/api/tap-info'){
@@ -68,5 +73,11 @@ const host=process.env.HOST||'127.0.0.1',port=Number(process.env.PORT||8765);
 const socketDirectory=`/tmp/ghettoscopez-${process.getuid()}`;fs.mkdirSync(socketDirectory,{recursive:true,mode:0o700});
 if(!nativeIngest)throw Error('Build native analysis before starting local ingest');
 const stopIngest=nativeIngest(`${socketDirectory}/ingest-${port}.sock`,packet=>{try{live.ingestNative(packet);}catch(error){console.error('Local ingest rejected:',error.message);}});
-process.once('SIGINT',()=>{stopIngest();process.exit(0);});process.once('SIGTERM',()=>{stopIngest();process.exit(0);});
-server.listen(port,host,()=>{const scheme=tls?'https':'http';console.log(`Local: ${scheme}://localhost:${port}`);if(host==='0.0.0.0')for(const list of Object.values(os.networkInterfaces()))for(const n of list||[])if(n.family==='IPv4'&&!n.internal)console.log(`iPad: ${scheme}://${n.address}:${port}`);console.log('Resolve ingest: loopback POST /api/resolve/input. Ctrl-C stops the server.');});
+process.once('SIGINT',()=>{grading?.stop();stopIngest();process.exit(0);});process.once('SIGTERM',()=>{grading?.stop();stopIngest();process.exit(0);});
+server.listen(port,host,()=>{const scheme=tls?'https':'http',viewerPath='/scopes.html'+(grading?'?grading=1':'');console.log(`Local: ${scheme}://localhost:${port}${viewerPath}`);if(host==='0.0.0.0')for(const list of Object.values(os.networkInterfaces()))for(const n of list||[])if(n.family==='IPv4'&&!n.internal)console.log(`iPad: ${scheme}://${n.address}:${port}${viewerPath}`);console.log('Resolve ingest: loopback POST /api/resolve/input. Ctrl-C stops the server.');});
+
+// Session supervisor IPC is available only to its own child process, never over HTTP.
+if(grading&&process.send){
+  process.on('message',message=>{if(message?.action==='reload-grading-worker'){grading.stop();process.send?.({event:'audition-worker-reloaded'});}});
+  server.on('listening',()=>process.send?.({event:'audition-ready'}));
+}

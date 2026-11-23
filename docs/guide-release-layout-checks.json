@@ -1,0 +1,102 @@
+[
+  {
+    "width": 1440,
+    "documentWidth": 1440,
+    "missingImages": [],
+    "firstCard": "GPrime \u00b7 multitouch grading",
+    "sections": [
+      "install",
+      "connect",
+      "working-space",
+      "use",
+      "scopes",
+      "gprime",
+      "select",
+      "isolate",
+      "hue",
+      "parking",
+      "compare",
+      "settings",
+      "help",
+      "licence"
+    ],
+    "brokenAnchors": [],
+    "name": "desktop",
+    "errors": []
+  },
+  {
+    "width": 1194,
+    "documentWidth": 1194,
+    "missingImages": [],
+    "firstCard": "GPrime \u00b7 multitouch grading",
+    "sections": [
+      "install",
+      "connect",
+      "working-space",
+      "use",
+      "scopes",
+      "gprime",
+      "select",
+      "isolate",
+      "hue",
+      "parking",
+      "compare",
+      "settings",
+      "help",
+      "licence"
+    ],
+    "brokenAnchors": [],
+    "name": "ipad-landscape",
+    "errors": []
+  },
+  {
+    "width": 390,
+    "documentWidth": 390,
+    "missingImages": [],
+    "firstCard": "GPrime \u00b7 multitouch grading",
+    "sections": [
+      "install",
+      "connect",
+      "working-space",
+      "use",
+      "scopes",
+      "gprime",
+      "select",
+      "isolate",
+      "hue",
+      "parking",
+      "compare",
+      "settings",
+      "help",
+      "licence"
+    ],
+    "brokenAnchors": [],
+    "name": "iphone-portrait",
+    "errors": []
+  },
+  {
+    "width": 844,
+    "documentWidth": 844,
+    "missingImages": [],
+    "firstCard": "GPrime \u00b7 multitouch grading",
+    "sections": [
+      "install",
+      "connect",
+      "working-space",
+      "use",
+      "scopes",
+      "gprime",
+      "select",
+      "isolate",
+      "hue",
+      "parking",
+      "compare",
+      "settings",
+      "help",
+      "licence"
+    ],
+    "brokenAnchors": [],
+    "name": "iphone-landscape",
+    "errors": []
+  }
+]

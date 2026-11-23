@@ -1,0 +1,114 @@
+{
+  "status": "structural checks passed",
+  "source": "GPrime_Node_Tree_v1.drx",
+  "clipNodeCount": 15,
+  "roleProperties": {
+    "EXPOSURE": {
+      "label": "EXPOSURE",
+      "properties": {
+        "100663301": 1.0,
+        "100663320": 0.0,
+        "100663321": 0.0,
+        "100663322": 0.0,
+        "100663421": 0.0,
+        "100663422": 0.0,
+        "100663423": 0.0,
+        "2248146955": 0.0,
+        "2248147099": 2,
+        "2248147104": 0,
+        "2248147105": null,
+        "2248147721": 4,
+        "2284847105": 0,
+        "2284847153": null,
+        "2289041438": null,
+        "2286944272": null,
+        "2293235730": null,
+        "2295332884": null,
+        "2297430029": null,
+        "3221225473": 2,
+        "3221225623": 12,
+        "3221225691": 1
+      }
+    },
+    "BALANCE": {
+      "label": "BALANCE",
+      "properties": {
+        "100663301": 1.0,
+        "100663320": 0.0,
+        "100663321": 0.0,
+        "100663322": 0.0,
+        "100663330": 0.0,
+        "100663331": 0.0,
+        "100663332": 0.0,
+        "100663421": 0.0,
+        "100663422": 0.0,
+        "100663423": 0.0,
+        "2248146955": 0.0,
+        "2248147099": 2,
+        "2248147721": 4,
+        "2284847105": 0,
+        "2284847153": null,
+        "2289041438": null,
+        "2286944272": null,
+        "2293235730": null,
+        "2295332884": null,
+        "2297430029": null,
+        "3221225473": 2,
+        "3221225623": 12,
+        "3221225691": 1
+      }
+    },
+    "SATURATION": {
+      "label": "SATURATION",
+      "properties": {
+        "2284847105": 0,
+        "2284847153": null,
+        "2289041438": null,
+        "2286944272": null,
+        "2293235730": null,
+        "2295332884": null,
+        "2297430029": null,
+        "3221225473": 2,
+        "3221225554": 0,
+        "3221225556": 0,
+        "3221225622": 46
+      }
+    },
+    "CONTRAST/RATIO": {
+      "label": "CONTRAST/RATIO",
+      "properties": {
+        "2248147099": 2,
+        "2248147104": 0,
+        "2248147105": null,
+        "2248147131": 2,
+        "2248147133": 2,
+        "2248147134": 2,
+        "2248147135": 2,
+        "2248147136": 0.335999995470047,
+        "2248148230": null,
+        "2248148231": null,
+        "2248148232": null,
+        "2248148233": null,
+        "2284847105": 0,
+        "2284847153": null,
+        "2289041438": null,
+        "2286944272": null,
+        "2293235730": null,
+        "2295332884": null,
+        "2297430029": null,
+        "3221225473": 2
+      }
+    }
+  },
+  "inputCST": "DWG_COLORSPACE and DAV_INTER_OETF_GAMMA encoded in clip body",
+  "timelineReferences": [
+    "E*CCKC/Referent/iPhone - Apple Log/Referent_Apple Log 2_to_Rec709.cube",
+    "local.signallab.resolvetap",
+    "local.signallab.resolvetap"
+  ],
+  "scope": "Offline DRX decode; no import or Resolve UI operation. Property enum interpretation follows the supplied configured template; this is not an official DRX schema validator. The user has tested the GPrime controls in Resolve.",
+  "sources": [
+    "https://documents.blackmagicdesign.com/UserManuals/DaVinci-Resolve-20-Colorist-Guide.pdf",
+    "https://cullenkellycolor.com/toolkit/referent"
+  ]
+}

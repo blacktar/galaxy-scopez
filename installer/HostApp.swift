@@ -5,6 +5,7 @@ final class HostApp: NSObject, NSApplicationDelegate {
     var item: NSStatusItem!
     var child: Process?
     var log: FileHandle?
+    var nativeControls: NativeResolveServer?
     var stopping = false
     var termination: DispatchSourceSignal?
     let status = NSMenuItem(title: "Starting…", action: nil, keyEquivalent: "")
@@ -14,7 +15,7 @@ final class HostApp: NSObject, NSApplicationDelegate {
         item.button?.toolTip = "Galaxy Scopez"
         let menu = NSMenu()
         menu.addItem(status)
-        for (title, selector) in [("Open Viewer", #selector(viewer)), ("Open User Guide", #selector(guide)), ("Start Server", #selector(start)), ("Stop Server", #selector(stop)), ("Show Log", #selector(showLog)), ("Quit Galaxy Scopez", #selector(quit))] {
+        for (title, selector) in [("Open Viewer", #selector(viewer)), ("Enable Resolve controls…", #selector(enableResolveControls)), ("Open User Guide", #selector(guide)), ("Start Server", #selector(start)), ("Stop Server", #selector(stop)), ("Show Log", #selector(showLog)), ("Quit Galaxy Scopez", #selector(quit))] {
             let entry = NSMenuItem(title: title, action: selector, keyEquivalent: "")
             entry.target = self
             menu.addItem(entry)
@@ -24,11 +25,21 @@ final class HostApp: NSObject, NSApplicationDelegate {
         termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
         termination?.setEventHandler { [weak self] in self?.quit() }
         termination?.resume()
-        start()
+        do {
+            let controls = NativeResolveServer()
+            try controls.start()
+            nativeControls = controls
+        } catch { status.title = error.localizedDescription }
+        if nativeControls != nil { start() }
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         item.button?.performClick(nil)
         return false
+    }
+    var developmentHost: URL? {
+        let args = CommandLine.arguments
+        guard let index = args.firstIndex(of: "--development-host"), args.count > index + 1 else { return nil }
+        return URL(fileURLWithPath: args[index + 1], isDirectory: true)
     }
     var logURL: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Galaxy Scopez/host.log")
@@ -37,6 +48,7 @@ final class HostApp: NSObject, NSApplicationDelegate {
         guard child == nil else { return }
         stopping = false
         let resources = Bundle.main.resourceURL!
+        let host = developmentHost ?? resources.appendingPathComponent("host")
         do {
             try FileManager.default.createDirectory(at: logURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             if !FileManager.default.fileExists(atPath: logURL.path) {
@@ -46,12 +58,18 @@ final class HostApp: NSObject, NSApplicationDelegate {
             log?.seekToEndOfFile()
             let process = Process()
             process.executableURL = resources.appendingPathComponent("runtime/node")
-            process.arguments = [resources.appendingPathComponent("host/web/server.mjs").path]
-            process.currentDirectoryURL = resources.appendingPathComponent("host")
+            process.arguments = [host.appendingPathComponent("scripts/grading-session.mjs").path, "serve"]
+            process.currentDirectoryURL = host
             var environment = ProcessInfo.processInfo.environment
             environment["HOST"] = "0.0.0.0"
             environment["PORT"] = "8765"
             environment["SCOPE_DIAGNOSTICS"] = "0"
+            environment["GS_GRADING_AUDITION"] = "1"
+            environment["GS_NATIVE_ANALYSIS_ADDON"] = resources.appendingPathComponent("host/build/scope-analysis.node").path
+            let state = developmentHost != nil ? host.appendingPathComponent("docs/reverse-scopes") : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Galaxy Scopez/Grading")
+            environment["GS_STATE_DIR"] = state.path
+            let python = resources.appendingPathComponent("runtime/python3")
+            if FileManager.default.isExecutableFile(atPath: python.path) { environment["GS_PYTHON"] = python.path }
             environment.removeValue(forKey: "NODE_OPTIONS")
             environment.removeValue(forKey: "NODE_PATH")
             process.environment = environment
@@ -80,12 +98,16 @@ final class HostApp: NSObject, NSApplicationDelegate {
         if let process = child, process.isRunning { process.terminate() }
         else { status.title = "Server stopped" }
     }
+    @objc func enableResolveControls() { _ = NativeResolveControl.trusted(prompt: true) }
     @objc func viewer() { NSWorkspace.shared.open(URL(string: "http://localhost:8765/scopes.html")!) }
     @objc func guide() { NSWorkspace.shared.open(URL(string: "http://localhost:8765/guide/index.html")!) }
     @objc func showLog() { NSWorkspace.shared.open(logURL) }
-    @objc func quit() { stop(); child?.waitUntilExit(); NSApplication.shared.terminate(nil) }
-    func applicationWillTerminate(_ notification: Notification) { stop(); child?.waitUntilExit() }
+    @objc func quit() { nativeControls?.stop(); stop(); child?.waitUntilExit(); NSApplication.shared.terminate(nil) }
+    func applicationWillTerminate(_ notification: Notification) { nativeControls?.stop(); stop(); child?.waitUntilExit() }
 }
+@main
+struct GalaxyScopezMain {
+static func main() {
 // Finder alias creation runs as the logged-in user during installation, without
 // starting another server or opening an application window.
 if CommandLine.arguments.contains("--create-desktop-alias") {
@@ -118,3 +140,6 @@ let delegate = HostApp()
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
 app.run()
+
+}
+}

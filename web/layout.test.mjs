@@ -28,3 +28,11 @@ test('individual RGB histograms are independently selectable and share exact ana
 test('single scope keeps OG or main or first occupied scope in a full panel',async()=>{const {singleLayout}=await import('./public/layout.mjs');assert.deepEqual(singleLayout([4,5,6,7]),[-1,-1,-1,7]);assert.deepEqual(singleLayout([16,5,6,7]),[-1,-1,-1,16]);assert.deepEqual(singleLayout([4,-1,-1,-1]),[-1,-1,-1,4]);assert.deepEqual(singleLayout([-1,-1,-1,-1]),[-1,-1,-1,-1]);assert.deepEqual(arrangeLayout([4,5,6,7],'single').positions,{3:{column:'1',row:'1'}});});
 
 test('two scopes are equal-width side by side and retain OG',async()=>{const {twoLayout}=await import('./public/layout.mjs');assert.deepEqual(twoLayout([4,5,6,7]),[4,-1,-1,7]);assert.deepEqual(twoLayout([4,16,6,7]),[16,-1,-1,7]);assert.deepEqual(twoLayout([-1,-1,-1,16]),[-1,-1,-1,16]);const g=arrangeLayout([4,5,6,7],'two');assert.equal(g.columns,'repeat(2,minmax(0,1fr))');assert.equal(g.rows,'minmax(0,1fr)');assert.deepEqual(g.positions,{0:{column:'1',row:'1'},3:{column:'2',row:'1'}});});
+
+test('GPrime is a selectable scope requesting only the live vector plane',async()=>{
+ const {SCOPE_NAMES,analysisScopes,assignSlot,validLayout}=await import('./public/layout.mjs');
+ assert.equal(SCOPE_NAMES[18],'GPrime');assert.ok(validLayout([-1,-1,-1,18]));
+ assert.deepEqual(analysisScopes([-1,-1,-1,18]),[3]);
+ assert.deepEqual(analysisScopes([3,-1,-1,18]),[3]);
+ assert.deepEqual(assignSlot([4,5,6,7],3,18),[4,5,6,18]);
+});
