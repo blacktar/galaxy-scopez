@@ -36,7 +36,7 @@ export function gradeAudition(root) {
       child.on('error',()=>{if(worker===child)stop();});
     }
     return new Promise((resolve,reject)=>{
-      pending={resolve,reject,action:request.action,role:request.role,control:request.control,operation:request.operation,timer:setTimeout(stop,5000)};
+      pending={resolve,reject,action:request.action,role:request.role,control:request.control,operation:request.operation,timer:setTimeout(stop,['gprime-reset','gprime-undo'].includes(request.action)?20000:5000)};
       worker.stdin.write(JSON.stringify(request)+'\n');
     });
   }
@@ -77,7 +77,7 @@ export function gradeAudition(root) {
         }
         res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({ok:true}));return;
       }
-      if(!['inspect','bind','read','set','restore','release','contrast-select','contrast-confirm','contrast-begin','contrast-end','contrast-nav','hsv-begin','hsv-end','gprime-bind','gprime-ready','gprime-disarm','gprime-begin','gprime-set','gprime-end','gprime-undo','gprime-action'].includes(request.action))throw Error('Unsupported action');
+      if(!['inspect','bind','read','set','restore','release','contrast-select','contrast-confirm','contrast-begin','contrast-end','contrast-nav','hsv-begin','hsv-end','gprime-bind','gprime-ready','gprime-disarm','gprime-begin','gprime-set','gprime-end','gprime-undo','gprime-reset','gprime-action'].includes(request.action))throw Error('Unsupported action');
       const response=await enqueue(request);
       res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify(response));
     }catch(error){

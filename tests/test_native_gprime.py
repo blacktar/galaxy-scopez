@@ -32,6 +32,45 @@ class GPrimeTest(unittest.TestCase):
     def call(self,action,**data):return self.gp.command(action,data,self.clip,self.info,self.bindings)
     def begin(self,role):return self.call('gprime-begin',role=role)['gesture']
     def end(self,role,token):return self.call('gprime-end',role=role,gesture=token)
+    def test_gain_resets_only_gain_and_undo_restores_previous_values(self):
+        for role,node in [('exposure',1),('balance',3)]:
+            before={'Slope':'2 .8 1.3','Offset':'.1 .2 .3','Power':'.9 1 1.1','Saturation':.8}
+            self.clip.nodes[node]=copy.deepcopy(before)
+            self.call('gprime-reset',role=role,control=role)
+            self.assertEqual(self.clip.nodes[node],dict(before,Slope='1 1 1'))
+            self.call('gprime-undo',role=role,control=role)
+            self.assertEqual(self.clip.nodes[node],before)
+
+    def test_native_resets_preserve_other_controls_pivot_and_are_undoable(self):
+        state={'gamma':.12,'gain':3.35,'contrast':1.18,'pivot':.336}
+        self.panel.primary_readback=lambda:dict(state)
+        self.panel.change=lambda delta:state.update(contrast=state['contrast']+delta*.001)
+        def change(delta):
+            for key in delta:state[key]+=delta[key]*.001
+            return dict(state)
+        self.panel.saturation_change=change
+        for role,key,target in [('contrast','contrast',1),('saturation','gamma',0),('saturation','gain',1)]:
+            before=dict(state)
+            self.call('gprime-reset',role=role,control=key)
+            self.assertAlmostEqual(state[key],target,delta=.00051)
+            for other in state:
+                if other!=key:self.assertEqual(state[other],before[other])
+            self.call('gprime-undo',role=role,control=key)
+            for other in state:self.assertAlmostEqual(state[other],before[other],delta=.00051)
+
+    def test_reset_at_default_does_not_write_or_replace_previous_undo(self):
+        self.call('gprime-reset',role='exposure');self.assertEqual(self.clip.writes,[])
+        self.assertEqual(self.gp.history['exposure'],[])
+
+    def test_reset_rejects_active_drag_wrong_control_and_wrong_pivot(self):
+        self.begin('exposure')
+        with self.assertRaisesRegex(ValueError,'Finish'):self.call('gprime-reset',role='exposure')
+        self.gp.session=None
+        with self.assertRaisesRegex(ValueError,'Invalid'):self.call('gprime-reset',role='contrast',control='gain')
+        self.panel.reject=True
+        with self.assertRaisesRegex(ValueError,'Pivot'):self.call('gprime-reset',role='contrast')
+        self.assertEqual(self.panel.changes,[])
+
     def test_second_display_ready_does_not_cancel_existing_drag(self):
         token=self.begin('exposure')
         self.call('gprime-ready')

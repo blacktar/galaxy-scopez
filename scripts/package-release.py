@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Package tracked source and pinned browser/host dependencies for Mac users."""
+"""Package committed source and pinned browser/host dependencies for Mac users."""
 import hashlib,json,os,stat,subprocess,sys,zipfile
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 version=(root/'web/VERSION').read_text().strip()
 out=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else root/'build'/f'Galaxy-Scopez-{version}-mac.zip'
 out.parent.mkdir(parents=True,exist_ok=True)
-tracked=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode().split('\0')
+tracked=subprocess.check_output(['git','ls-tree','-r','--name-only','-z','HEAD'],cwd=root).decode().split('\0')
+committed=set(filter(None,tracked))
+if subprocess.check_output(['git','show','HEAD:web/VERSION'],cwd=root,text=True).strip()!=version:raise SystemExit('Commit the release version before packaging source')
 required=json.loads((root/'web/package.json').read_text())['dependencies']
 extra=[]
 for name,expected in required.items():
@@ -29,7 +31,7 @@ with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) a
   path=root/rel;info=zipfile.ZipInfo.from_file(path,'Galaxy-Scopez/'+rel)
   mode=0o755 if path.stat().st_mode&0o111 or path.suffix in ['.command','.sh'] else 0o644
   info.create_system=3;info.external_attr=(stat.S_IFREG|mode)<<16;info.compress_type=zipfile.ZIP_DEFLATED
-  z.writestr(info,path.read_bytes())
+  z.writestr(info,subprocess.check_output(['git','show','HEAD:'+rel],cwd=root) if rel in committed else path.read_bytes())
 with zipfile.ZipFile(out) as z:
  for info in z.infolist():
   mode=stat.S_IMODE(info.external_attr>>16)

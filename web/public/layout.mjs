@@ -29,7 +29,7 @@ export function arrangeLayout(layout,mode='top',share=40){
 }
 
 // Both histogram views share the same exact count plane; never analyse it twice.
-export function analysisScopes(layout){return [...new Set(layout.filter(i=>i>=0).flatMap(i=>i===18?[3]:i===17?[3,9]:i===9?[4,5,6]:[i===16?3:i===14?9:i===15?10:i===13?8:i===8||i>=10?2:i]))].sort((a,b)=>a-b);}
+export function analysisScopes(layout,{gprimeDoubleD=false,gprimeWaveform=false}={}){return [...new Set(layout.filter(i=>i>=0).flatMap(i=>i===18?[gprimeDoubleD?7:3,...(gprimeWaveform?[0]:[])]:i===17?[3,9]:i===9?[4,5,6]:[i===16?3:i===14?9:i===15?10:i===13?8:i===8||i>=10?2:i]))].sort((a,b)=>a-b);}
 
 // An active Scopez Quest has no second menu entry, even in alternate settings controls.
 export function scopeChoices(layout,current=-1){return SCOPE_NAMES.map((name,id)=>({name,id})).filter(item=>item.id!==16||!layout.includes(16)||current===16);}

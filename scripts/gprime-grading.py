@@ -1,5 +1,6 @@
 """Combined GPrime runtime. Only called by explicit viewer gestures."""
 import math
+import time
 import uuid
 
 def checked_numbers(value):
@@ -57,6 +58,56 @@ class GPrime:
             token=uuid.uuid4().hex
             self.session={'role':role,'node':node,'gesture':token,'before':cdl,'last':cdl,'position':0,'connection':connection,'nativeBefore':native,'nativeLast':native,'startPositions':dict(self.positions)}
             return {'gesture':token,'role':role,'cdl':cdl,'native':native,'positions':dict(self.positions)}
+        if action=='gprime-reset':
+            if self.session:raise ValueError('Finish the current drag before reset.')
+            key=request.get('control',role)
+            if (role=='saturation' and key not in ('gamma','gain')) or (role!='saturation' and key!=role):raise ValueError('Invalid reset control.')
+            if role in ('exposure','balance'):
+                before=clip.GetCDL(node)
+                values=checked_numbers(before)
+                if any(not math.isfinite(x) for group in values.values() for x in group):raise ValueError('Node readback is not finite.')
+                value=dict(before,NodeIndex=node,Slope='1 1 1')
+                if not same_cdl(before,value):
+                    if not clip.SetCDL(value):raise ValueError('Resolve rejected reset.')
+                    actual=clip.GetCDL(node)
+                    if not same_cdl(actual,value):raise ValueError('Reset readback mismatch.')
+                    self.history[key].append({'before':before,'after':actual})
+                else:actual=before
+                return {'role':role,'cdl':actual,'reset':key}
+            panel=self.panel()
+            if role=='contrast':panel.select_bound_node(node);native=panel.primary_readback()
+            else:native=panel.select_saturation_node(node)
+            before=native[key];target=0.0 if key=='gamma' else 1.0
+            if not math.isfinite(before):raise ValueError('Native readback is not finite.')
+            total=0;slope=None;deadline=time.monotonic()+12
+            if self.history[key]:
+                entry=self.history[key][-1]
+                if entry.get('delta'):slope=(entry['after']-entry['before'])/entry['delta']
+            connection=panel.status()['connection'];pivot=native.get('pivot');other='gain' if key=='gamma' else 'gamma';other_before=native.get(other)
+            try:
+                for attempt in range(128):
+                    tolerance=max(2e-6,abs(slope or 0)*.51)
+                    error=target-native[key]
+                    if abs(error)<=tolerance:break
+                    if time.monotonic()>deadline:raise ValueError('Reset timed out; use this control’s Undo to restore its previous value.')
+                    if panel.status()['connection']!=connection:raise ValueError('Panel connection changed during reset.')
+                    cap=800 if role=='contrast' else 100
+                    step=max(-cap,min(cap,round(error/slope))) if slope and math.isfinite(slope) and slope>0 else (10 if error>0 else -10)
+                    if not step:break
+                    previous=native[key]
+                    if role=='contrast':panel.change(step);native=panel.primary_readback()
+                    else:native=panel.saturation_change({name:step if name==key else 0 for name in ('gamma','gain')})
+                    total+=step
+                    if role=='contrast' and abs(native['pivot']-pivot)>2e-6:raise ValueError('Pivot changed during reset; reset stopped.')
+                    if role=='saturation' and abs(native[other]-other_before)>2e-6:raise ValueError('The other saturation control changed; reset stopped.')
+                    measured=(native[key]-previous)/step
+                    if not math.isfinite(measured) or measured<=1e-12:raise ValueError('Reset made no measurable native progress; reset stopped.')
+                    slope=measured
+                if abs(native[key]-target)>max(2e-6,abs(slope or 0)*.51):raise ValueError('Reset did not reach the default value; use Undo to restore.')
+                return {'role':role,'native':native,'positions':dict(self.positions,**({key:self.positions[key]+total} if role=='saturation' else {})),'reset':key}
+            finally:
+                if role=='saturation':self.positions[key]+=total
+                if total and abs(native[key]-before)>1e-12:self.history[key].append({'before':before,'after':native[key],'delta':total,'reset':True})
         if action=='gprime-undo':
             if self.session:raise ValueError('Finish the current drag before undo.')
             key=request.get('control',role)
@@ -80,7 +131,9 @@ class GPrime:
                     slope=(entry['after']-target)/entry['delta'] if entry['delta'] else 0
                     if not math.isfinite(slope) or abs(slope)<1e-12:raise ValueError('Undo has no measurable native movement.')
                     total=0
-                    for attempt in range(8):
+                    deadline=time.monotonic()+12
+                    for attempt in range(128 if entry.get('reset') else 8):
+                        if time.monotonic()>deadline:raise ValueError('Undo timed out; controls remain connected.')
                         error=target-native[key]
                         # Native encoder positions are quantised; nearest reachable step is sufficient.
                         tolerance=max(2e-6,abs(slope)*.51)

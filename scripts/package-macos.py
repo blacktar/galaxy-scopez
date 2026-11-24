@@ -57,7 +57,7 @@ if not a.resume:
  for f in (root/'web').glob('*.mjs'):
   if not f.name.endswith('.test.mjs'):shutil.copy2(f,host/'web'/f.name)
  for f in ['package.json','VERSION']:shutil.copy2(root/'web'/f,host/'web'/f)
- shutil.copytree(root/'web/public',host/'web/public',ignore=shutil.ignore_patterns('vector-detail-bench.html','vector-detail-bench.mjs','vector-detail-data'))
+ shutil.copytree(root/'web/public',host/'web/public',ignore=shutil.ignore_patterns('guide','guide.html','vector-detail-bench.html','vector-detail-bench.mjs','vector-detail-data'))
  (host/'scripts').mkdir()
  for name in ['native-grade-worker.py','gprime-grading.py','gprime-actions.py','contrast-panel-bridge.py','native-contrast-panel-test.py','grading-session.mjs']:
   shutil.copy2(root/'scripts'/name,host/'scripts'/name)
@@ -129,6 +129,10 @@ if not a.resume:
  fi
  exit 0
  ''')
+# Never ship the HTML user guide, including when resuming a previously staged build.
+local_guide=host/'web/public/guide'
+if local_guide.exists():shutil.rmtree(local_guide)
+(host/'web/public/guide.html').unlink(missing_ok=True)
 for f in payload.rglob('*'):
  if f.is_dir():f.chmod(0o755)
  elif f.name in ['node','GalaxyScopez','SignalLabTap.ofx'] or f.stat().st_mode & 0o111:f.chmod(0o755)
@@ -164,6 +168,7 @@ run('pkgbuild','--analyze','--root',payload,components)
 entries=plistlib.loads(components.read_bytes())
 for entry in entries:
  entry['BundleIsRelocatable']=False
+ entry['BundleOverwriteAction']='upgrade'
 components.write_bytes(plistlib.dumps(entries))
 run('pkgbuild','--root',payload,'--component-plist',components,'--scripts',work/'scripts','--identifier','com.vidarandersen.ghettoscopez.installer','--version',version+'.1','--install-location','/','--ownership','recommended',component)
 # Disable bundle relocation: app and launch agent must agree on a fixed path.
@@ -186,7 +191,7 @@ dist.write_text(f'''<?xml version="1.0" encoding="utf-8"?>
 ui=work/'ui';ui.mkdir(exist_ok=True)
 shutil.copy2(root/'LICENSE',ui/'LICENSE.txt')
 (ui/'welcome.html').write_text('<html><body><h1>Galaxy Scopez</h1><p>Install GTap for DaVinci Resolve and the Galaxy Scopez menu-bar app, including its server and runtime.</p><p><b>Quit DaVinci Resolve before continuing.</b> macOS 27 or later required.</p><p>The server starts after installation and at login. It serves scopes on your local network on port 8765.</p></body></html>')
-(ui/'conclusion.html').write_text('<html><body><h1>Galaxy Scopez is installed</h1><p>Double-click the desktop Galaxy Scopez icon to open the app and server controls. Use <b>GS</b> in the menu bar to open the viewer or guide, and start or stop the server. Open Galaxy Scopez in Applications if the menu is absent.</p><p>Quit an older Terminal-based host before starting this server. Allow local network access if macOS asks. Open DaVinci Resolve and add GTap.</p><p>For GPrime grading, enable Local external scripting in Resolve, then choose <b>GS → Enable Resolve controls…</b> and grant Galaxy Scopez its macOS permission. Follow the user guide to import the supplied PowerGrade and assign its nodes.</p></body></html>')
+(ui/'conclusion.html').write_text('<html><body><h1>Galaxy Scopez is installed</h1><p>Double-click the desktop Galaxy Scopez icon to open the app and server controls. Use <b>GS</b> in the menu bar to open the viewer or guide, and start or stop the server. Open Galaxy Scopez in Applications if the menu is absent.</p><p>Quit an older Terminal-based host before starting this server. Allow local network access if macOS asks. Open DaVinci Resolve and add GTap.</p><p>The first time Galaxy Scopez opens after installation, it offers <b>Enable</b> or <b>Set Up Later</b> for its Resolve shortcut permission. This lets GPrime use Resolve’s menus for Previous/Next Clip, Apply Prior, Undo and Clip Fullscreen. Scopes work without it. Follow the prompt in <b>System Settings → Privacy &amp; Security → Device Control and Data Access</b> (Accessibility on older macOS). If you skip it, choose <b>GS → Enable Resolve controls…</b> later; you can change the permission in System Settings at any time.</p><p>For GPrime grading, also enable Local external scripting in Resolve. Follow the <a href="https://vidarandersen.com/dmz/galaxyscopez/">online user guide</a> to import the supplied PowerGrade and assign its nodes.</p></body></html>')
 out=root.parent/f'Galaxy-Scopez-{version}-mac.pkg'
 run('productbuild','--distribution',dist,'--package-path',work,'--resources',ui,'--sign',a.installer_identity,'--timestamp',out)
 out.chmod(0o644)

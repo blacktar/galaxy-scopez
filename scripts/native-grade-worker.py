@@ -113,7 +113,7 @@ def command(request):
         gprime_actions.remember(info,gprime_bindings)
         return {'role':role,'gprimeBindings':current_gprime_bindings(info)}
 
-    if action in ('gprime-ready','gprime-disarm','gprime-begin','gprime-set','gprime-end','gprime-undo'):
+    if action in ('gprime-ready','gprime-disarm','gprime-begin','gprime-set','gprime-end','gprime-undo','gprime-reset'):
         return gprime_runtime.command(action,request,clip,info,current_gprime_bindings(info))
 
     if action == "bind":

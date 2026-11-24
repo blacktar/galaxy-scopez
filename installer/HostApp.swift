@@ -31,6 +31,14 @@ final class HostApp: NSObject, NSApplicationDelegate {
             nativeControls = controls
         } catch { status.title = error.localizedDescription }
         if nativeControls != nil { start() }
+        // The logged-in app owns the permission request, never the root installer.
+        // Ask once after installation; development launches do not show onboarding.
+        if developmentHost == nil && !UserDefaults.standard.bool(forKey: "resolveControlSetupShownV1") {
+            UserDefaults.standard.set(true, forKey: "resolveControlSetupShownV1")
+            if !NativeResolveControl.trusted() {
+                DispatchQueue.main.async { [weak self] in self?.explainResolveControls() }
+            }
+        }
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         item.button?.performClick(nil)
@@ -98,9 +106,23 @@ final class HostApp: NSObject, NSApplicationDelegate {
         if let process = child, process.isRunning { process.terminate() }
         else { status.title = "Server stopped" }
     }
-    @objc func enableResolveControls() { _ = NativeResolveControl.trusted(prompt: true) }
+    func explainResolveControls() {
+        let alert = NSAlert()
+        alert.messageText = "Enable GPrime’s Resolve shortcuts?"
+        alert.informativeText = "Galaxy Scopez needs macOS permission to use Resolve’s menus for Previous/Next Clip, Apply Prior, Undo and Clip Fullscreen. You can use the scopes without granting it.\n\nChoose Enable to open the permission settings. Turn on Galaxy Scopez in Privacy & Security → Device Control and Data Access (Accessibility on older macOS).\n\nIf you choose Set Up Later, return to GS → Enable Resolve controls… in the Mac menu bar. You can also change this permission in System Settings at any time. GPrime grading additionally requires Resolve’s separate Local external scripting setting, described in the online guide."
+        alert.addButton(withTitle: "Enable")
+        alert.addButton(withTitle: "Set Up Later")
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            _ = NativeResolveControl.trusted(prompt: true)
+            if !NativeResolveControl.trusted(), let settings = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(settings)
+            }
+        }
+    }
+    @objc func enableResolveControls() { explainResolveControls() }
     @objc func viewer() { NSWorkspace.shared.open(URL(string: "http://localhost:8765/scopes.html")!) }
-    @objc func guide() { NSWorkspace.shared.open(URL(string: "http://localhost:8765/guide/index.html")!) }
+    @objc func guide() { NSWorkspace.shared.open(URL(string: "https://vidarandersen.com/dmz/galaxyscopez/")!) }
     @objc func showLog() { NSWorkspace.shared.open(logURL) }
     @objc func quit() { nativeControls?.stop(); stop(); child?.waitUntilExit(); NSApplication.shared.terminate(nil) }
     func applicationWillTerminate(_ notification: Notification) { nativeControls?.stop(); stop(); child?.waitUntilExit() }

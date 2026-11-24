@@ -17,9 +17,17 @@ The release includes the GPrime PowerGrade and illustrated setup instructions.
 Use the PowerGrade on ungraded clips before grading; configure transforms for
 your source and display. Referent is linked separately and not included.
 
+Viewer 0.4.0 adds optional DoubleD Balance with independent two-finger pair
+control, a live waveform overlay, and one-second hold-to-reset buttons with undo.
+On iPad, Add to Home Screen → Open as Web App gives a compact interface with
+Reload and Start/Stop, remembered listening state and automatic start on touch.
+A/B/C overlay opacity now reuses rendered snapshots for responsive adjustment.
+First-launch setup explains the optional Resolve shortcut permission; Set Up
+Later keeps it available under GS → Enable Resolve controls… .
+
 ## Install and start
 
-This release includes **GTap 1.2.29** and **viewer 0.3.0**.
+This release includes **GTap 1.2.29** and **viewer 0.4.0**.
 The supplied universal GTap binary requires **macOS 27 or later** (Apple silicon
 or Intel). Earlier macOS versions have not been verified for this release.
 DaVinci Resolve is required. The new `.pkg` installer bundles the server,
@@ -44,7 +52,7 @@ retained as a legacy download.
 Waveform, RGB parade/histogram, vectorscopes and highs/mids/lows views, DoubleD,
 a rotatable RGB cube, saturation/luma and hue histogram; image region and colour
 selection; three A/B/C snapshots per scope; saved browser settings and settings
-files. The guide works offline and on portrait phones. Its full-width header
+files. The online guide works on portrait phones and is not bundled with the installer. Its full-width header
 randomly selects one of 37 supplied images, converted to responsive WebP assets.
 
 Source / working-space tap: choose **Source / working-space RGB — no transform**
@@ -119,3 +127,27 @@ GPrime has an Undo button on each side of Clip Fullscreen, next to Apply 2 Prior
 GPrime hero parking: the strip beneath the shortcut buttons shows the current clip position and timecode. Hold still on the strip for one second to unlock scrubbing, then drag left or right. Release to lock it again. Movement stays within the current clip. Resolve must be on the Color page; grading-node assignments are not needed just to scrub. The strip uses Resolve scripting and has not yet passed the live iPad audition.
 
 Multiple GPrime displays can connect simultaneously. There is no exclusive viewer ownership or takeover step. Commands run in order against Resolve’s current clip and shared grading assignments; refreshing another display does not interrupt an active drag.
+
+GPrime Balance (development 0.3.1): use the top-left stacked-diamond button to switch to DoubleD; its circular-reticle icon switches back to the vectorscope. Both use the same assigned Balance node, sensitivity and undo. Drag vertically in the left diamond for blue/green, the right for red/green, or both with two fingers. The display choice is saved locally and switching does not change the grade. Refresh the viewer; no server restart or rebinding is needed.
+
+Development 0.3.2 fits the GPrime DoubleD diamond outlines to the full Balance width between the display switch and undo outer edges, preserving their proportions.
+
+Development 0.3.3 keeps bound GPrime controls visually steady during another control’s gesture. Both Balance views share the ribbon touch/selection/overscroll protections; actual iPad Safari fullscreen behavior remains subject to device testing.
+
+Development0.3.4 adds an optional live waveform backdrop to GPrime. Toggle the line-chart icon beside Exposure, between undo and sensitivity. It is shown at25% opacity above the clip image and behind the controls, ignores touches, and saves its on/off state. It requests the waveform measurement only while needed. Refresh the viewer; no host restart or rebinding required.
+
+Development0.3.5 fixes the live GPrime waveform backdrop freezing when incoming frames reuse the decoder’s count buffer. Refresh the viewer to load the fix.
+
+Development0.3.6 claims GPrime ribbon/Balance touches from touchstart as well as touchmove, and records fullscreen exits for diagnosis. Actual Safari fullscreen stability awaits iPad testing. Hero scrub UI is50% transparent; hit area and hold timing are unchanged.
+
+Development0.3.8 adds nominal0/1 reference lines to the waveform backdrop, positioned within its current measurement range.
+
+Development0.3.9 makes waveform limit lines brighter and insets the trace/lines together so they no longer coincide with the outer scope frame.
+
+Development0.3.15 detects HomeScreen web-app launch and uses the expanded layout without requesting browser fullscreen. Compact tablet header places status, Reload and Start/Stop at the right; listening is removed from Controls in this mode. Reload refreshes the interface. Regular Safari launch retains its fullscreen behavior. Close/reopen the web app once to pick up this update; subsequent updates can use Reload.
+
+Development0.3.16 adds a one-second hold Reset beneath each GPrime Undo. A white80%fill shows progress. Reset only the selected parameter to neutral, preserving node processing settings and Contrast Pivot; Sat Gamma/Gain reset independently. Its Undo restores the pre-reset value. Native reset uses verified bound-node feedback and may take several updates. The development host was restarted to load this command; reload and reassign the four nodes for testing.
+
+Development0.3.20 starts listening when you interact with GPrime and remembers explicit Start/Stop across Reload. Temporary disconnections do not replace the saved choice; Stop remains available in the header. Static refresh only, no rebinding.
+
+Development0.3.25 prevents browser pinch/double-tap zoom on the HomeScreen header row while retaining normal button taps and Controls popup interaction. Reload the viewer to load it.

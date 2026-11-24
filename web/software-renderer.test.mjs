@@ -35,3 +35,9 @@ test('GPrime trace opacity follows intensity without a dark fringe or backing',(
  }
  assert.ok(clear>0);assert.ok(ink>0);
 });
+test('GPrime DoubleD uses the existing horizontal renderer with a transparent backing',()=>{
+ const d=analyzeFrame(makeFixture('sine',.37,7),{activeScopes:[7]});
+ const style={gain:1,brightness:100,smooth:true},options={background:0,transparentBackground:true,twinHorizontal:true,twinColour:true};
+ assert.deepEqual(renderSoftware(d,18,160,80,style,{...options,gprimeDoubleD:true}),renderSoftware(d,7,160,80,style,options));
+ const empty={...d,twin:new Uint32Array(d.twin.length)};const p=renderSoftware(empty,18,160,80,style,{...options,gprimeDoubleD:true});assert.ok(p.every(v=>v===0));
+});
