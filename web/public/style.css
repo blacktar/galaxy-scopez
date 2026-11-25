@@ -4,3 +4,58 @@
 #start{background:#000;color:#fff;border-color:#666}
 #start.listening{background:#fff;color:#000;border-color:#fff}
 #start:focus-visible{outline:2px solid #aaa;outline-offset:3px}
+
+/* Reserve the full RGB control width so modes and status never shift. */
+.wave-mode-buttons,.wave-channel-buttons{position:relative;z-index:5;display:flex;gap:4px;align-items:center;flex:none}
+.wave-channel-buttons.inactive{visibility:hidden;pointer-events:none}
+.wave-mode-buttons button,.wave-channel-buttons button{padding:5px 8px;min-height:32px;letter-spacing:0}
+.wave-mode-buttons button[aria-pressed="true"],.wave-channel-buttons button[aria-pressed="true"],.wave-color-toggle[aria-pressed="true"]{background:#bbb;color:#111;border-color:#bbb}
+
+@container (max-width:560px){.wave-mode-buttons,.wave-channel-buttons{gap:3px}.wave-mode-buttons button,.wave-channel-buttons button{padding:3px 5px;min-height:24px;font-size:10px}}
+
+.parade-mode-buttons{position:relative;z-index:5;display:flex;gap:4px;align-items:center;flex:none}.parade-mode-buttons button{padding:5px 8px;min-height:32px;letter-spacing:0}.parade-mode-buttons button[aria-pressed="true"],.parade-color-toggle[aria-pressed="true"],.scope-option-toggle[aria-pressed="true"]{background:#bbb;color:#111;border-color:#bbb}.parade-channel-labels{display:flex;padding-left:40px!important}.parade-channel-labels span{flex:1;text-align:center}
+.debug-off #scopes .scopehead .unit,.debug-off #scopes .scope[data-scope="0"] .xaxis{display:none!important}
+@container (max-width:560px){.parade-mode-buttons{gap:3px}.parade-mode-buttons button{padding:3px 5px;min-height:24px;font-size:10px}}
+
+.twin-orientation-toggle{width:80px;text-align:center}
+
+.debug-off #scopes .band-summary,.debug-off #scopes .scope[data-scope="19"] .xaxis{display:none!important}
+
+#pqwave-option[hidden],#pqwave-status[hidden],#hlg-peak-label[hidden],#hdr-settings[hidden]{display:none!important}
+.scope-frame{position:relative;min-width:0;min-height:0;overflow:hidden;background:#090909;border:1px solid #333;display:flex;flex-direction:column}
+.scope-frame>iframe{width:100%;height:100%;flex:1;min-height:0;min-width:0;border:0;background:#090909}
+.scope-frame.instance-advanced{position:fixed;inset:24px;z-index:120;background:#111;box-shadow:0 0 0 100vmax #000a;overflow:auto}
+.instance-back{position:absolute;right:12px;top:8px;z-index:130}
+.instance-back[hidden],.scope-settings-popup[hidden]{display:none!important}
+.scope-settings-popup{position:fixed;z-index:150;box-sizing:border-box;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:10px 12px;border:1px solid #444;border-radius:10px;background:#171717f5;box-shadow:0 8px 24px #0008;max-height:calc(100dvh - 28px);overflow-y:auto;color:#bbb;font-size:13px}
+.scope-settings-popup label{display:flex;align-items:center;gap:8px;flex:1 1 175px;min-width:0;white-space:nowrap}
+.scope-settings-popup input{flex:1;min-width:65px;width:110px}
+.scope-settings-popup output{min-width:36px;text-align:right;font-variant-numeric:tabular-nums}
+.scope-settings-popup button{height:32px;min-height:32px;padding:4px 8px;font:inherit;flex:none}
+html.scope-embedded,html.scope-embedded body{margin:0!important;padding:0!important;height:100%!important;min-height:0!important;overflow:hidden!important}
+html.scope-embedded body:not(.embedded-settings)>header,html.scope-embedded #fullscreencontrols,html.scope-embedded #controlhandle,html.scope-embedded #standaloneactions,html.scope-embedded #addscopebar,html.scope-embedded #emptylayout{display:none!important}
+html.scope-embedded body:not(.embedded-settings) #scopeview,html.scope-embedded body:not(.embedded-settings) #scopes{height:100%!important;min-height:0!important;margin:0!important;padding:0!important;gap:0!important}
+html.scope-embedded #scopes>.scope{border:0!important}
+html.scope-embedded body.embedded-settings{overflow:auto!important}
+html.scope-embedded body.embedded-settings>header{position:sticky!important;top:0;height:44px!important;min-height:44px!important;display:flex!important;justify-content:center;padding:6px!important;z-index:5}
+html.scope-embedded body.embedded-settings>header>div:not(.view-tabs),html.scope-embedded body.embedded-settings>header>button,html.scope-embedded body.embedded-settings>header>p{display:none!important}
+html.scope-embedded #layoutsettings,html.scope-embedded #settingsfiles{display:none!important}
+
+html.scope-embedded .metrics,html.scope-embedded #layoutsettings,html.scope-embedded #settingsfiles,html.scope-embedded label:has(>#vectordetail){display:none!important}
+
+#snapopacitylabel[hidden]{display:none!important}
+
+
+/* Prevent native iOS page zoom and text/copy callouts on scope chrome. */
+#scopes .scopehead,#scopes .scopehead *,.scope-settings-popup,.scope-settings-popup *{touch-action:none}
+#scopes,#scopes *,.scope-settings-popup,.scope-settings-popup *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+
+body.has-gprime-tab header>.view-tabs{gap:20px!important}
+body.has-gprime-tab #gprimetab{margin-right:70px}
+body.gprime-page #scopes>.scope-frame,body.gprime-page #addscopebar,body.gprime-page #emptyscopes,body.gprime-page #scopes>.scope[data-scope="18"] .scope-type{display:none!important}
+body.gprime-page #scopes>.scope[data-scope="18"]{grid-column:1!important;grid-row:1!important}
+
+.preset-active-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%}.preset-active-row>a{margin-left:auto;white-space:nowrap}
+
+html.scope-awaiting-frame .scopeplot canvas{visibility:hidden!important}
+html.scope-awaiting-frame .scopeplot::after{content:'Updating…';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:13px;color:#aaa;pointer-events:none;z-index:10}

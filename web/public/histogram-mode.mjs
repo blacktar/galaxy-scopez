@@ -1,0 +1,6 @@
+// Exact encoded-luma histogram; no waveform projection or reduced-level rebinning.
+export const histogramMode=value=>value==='yrgb'?'yrgb':'rgb';
+const cache=new WeakMap();
+export function histogramChannels(data){const n=data.config.histBins,rgb=['R','G','B'].map((name,ch)=>({name,ink:[[1,.22,.18],[.23,.9,.36],[.25,.48,1]][ch],values:data.hist.subarray(ch*n,(ch+1)*n)}));return histogramMode(data.config.histogramMode)==='yrgb'?[{name:'Y',ink:[1,1,1],values:data.histY},...rgb]:rgb;}
+export function histogramPlane(data){if(histogramMode(data.config.histogramMode)==='rgb'||!data.histY)return data.hist;let value=cache.get(data);if(!value){value=new Uint32Array(data.config.histBins*4);value.set(data.histY);value.set(data.hist,data.config.histBins);cache.set(data,value);}return value;}
+export function lumaHistogram(frame,c,decode,selected,matrix){const out=new Uint32Array(c.activeScopes.includes(15)?c.histBins:1);if(!c.activeScopes.includes(15))return out;for(let y=c.y0;y<c.y1;y++)for(let x=c.x0;x<c.x1;x++){const at=(y*frame.width+x)*3,rgb=decode(frame.data[at],frame.data[at+1],frame.data[at+2],frame.signal),l=(matrix.kr*rgb[0]+matrix.kg*rgb[1])+matrix.kb*rgb[2];if(selected(...rgb,l,c)&&Number.isFinite(l)&&l>=c.min&&l<=c.max)out[Math.round((l-c.min)/(c.max-c.min)*(c.histBins-1))]++;}return out;}

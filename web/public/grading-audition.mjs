@@ -26,8 +26,8 @@ export function mountGradingAudition(){
   <p role="status" style="white-space:pre-wrap;overflow-wrap:anywhere">Audition is disconnected.</p>
   <p>These controls test native CDL values in the node's current processing space. The exposure ribbon applies equal RGB gain in a separately configured Linear node. Compare its result with HDR Global Exposure; equivalence is not yet verified.</p>`;
   const debug=document.createElement('details');
-  const summary=document.createElement('summary');summary.textContent='Debug · individual control auditions';debug.append(summary,panel);
-  document.getElementById('settingsfiles').after(debug);
+  const summary=document.createElement('summary');summary.textContent='GPrime Debug Options';debug.append(summary,panel);
+  debug.id='gprime-debug-options';document.querySelector('#panel .debug-switch').after(debug);
   const status=panel.querySelector('[role="status"]'),select=panel.querySelector('select[aria-label="Audition node"]');
   const contrastNode=panel.querySelector('[data-contrast-node]'),roleSelect=panel.querySelector('[data-role]');
   function syncContrastNode(){contrastNode.value=select.value||'';}
@@ -227,6 +227,6 @@ export function mountGradingAudition(){
   select.addEventListener('change',reportDiagnostics);
   document.addEventListener('visibilitychange',reportDiagnostics);
   reportDiagnostics();
-  mountGPrimeBindings({before:debug,call});
+  mountGPrimeBindings({before:document.getElementById('layoutmode').closest('fieldset').nextElementSibling,call});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){queued=null;enable(false);if(token){panel.querySelector('[data-action="read"]').disabled=false;status.textContent='Controls paused while Safari was in the background. Tap Read back to resume.';}}});
 }

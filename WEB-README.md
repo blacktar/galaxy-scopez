@@ -1,6 +1,6 @@
 # Browser viewer
 
-Current viewer: **0.4.0**; release effect: **GTap 1.2.29**.
+Current release: **viewer 0.5.0**; release effect: **GTap 1.2.35**.
 
 Use [README.md](README.md) for installation or
 [the online user guide](https://vidarandersen.com/dmz/galaxyscopez/) for everyday use.
@@ -105,3 +105,46 @@ GPrime adds DoubleD Balance, optional live waveform and hold-to-reset controls.
 The native app offers Resolve shortcut permission during first-launch setup,
 with Set Up Later and GS → Enable Resolve controls… for returning to setup.
 All user-guide commands open the public online guide; no HTML guide is installed.
+
+## Release 0.5.0 scopes / GTap 1.2.35
+
+Release 0.5.0 includes:
+
+- CIE Chromaticity (xy/u′v′), explicit input primaries/transfer and a direct setup button. Rec.709, P3-D65 and Rec.2020 inputs are supported; the target/comparison gamut is independent. CIE dataset attribution remains CC BY-SA 4.0.
+- Waveform Y/CbCr/RGB mode buttons and independent RGB display channels; RGB/YRGB/YCbCr parades with a separate Color toggle. Mode buttons keep their positions and ignore repeated selection.
+- Source-image colours in CbCr waveforms and all YCbCr parade channels. RGB channels retain their channel colours; Color off is monochrome. Encoded parade Y stays separate from a PQ waveform.
+- Shared original-column footprint integration for waveform/parade display and snapshots, including both pooled columns at lower Q and sparse grids at higher Q. Measured counts are unchanged.
+- A fixed-width DoubleD Horizontal/Vertical header toggle, equal-height scope-header buttons, and portrait Controls wrapping.
+- Home Screen interaction starts every scope when listening is stopped; GPrime retains its existing auto-start. Diagnostic text is shown only with Debug enabled; scale/channel labels and setup/connection guidance remain visible.
+
+Source trace colours are optional packed rgb8 bin means (about 1/255 component precision); source float32 measurements and uint32 populations are unchanged. Colour data is produced by a bounded Metal tile kernel and forwarded without source-image frames. Snapshot storage retains its own immutable colour/count planes. The current suite has 218 passing web tests; independent GPU/count/wire and shared-footprint fixtures are recorded locally. These checks are not measurements of Resolve playback or iPad refresh rate.
+
+Install a changed GTap only after Resolve quits. Backend JavaScript changes need a managed host restart; static viewer changes need a browser reload. Viewer 0.5.0 includes GTap 1.2.35. Scope modes, individual controls and GPrime have been tested with Resolve and iPad Safari.
+
+Development 0.4.9 adds exact optional Y histogram counts (analysis15/histY) and shared RGB/YRGB header modes for overlaid/separate histograms. GTap1.2.35 appends explicit BT.2100 PQ/HLG choices without shifting existing saved-project indices. HDR detection requires explicit BT.2020 primaries and transfer, never inferred from gamut or numeric magnitude. PQ/HLG axes are signal scales; HLG uses a configurable zero-black400–2000nit reference display and BT.2100 system gamma (default1000nit). Parade range is display-only; adjustable SDR/HDR references remain separate from PAS. Encoded samples and count precision are preserved.
+
+Extents are local display envelopes from unsmoothed bins, independently remembered for Waveform/Parade/Vectorscopes and GPrime’s vector Balance. Column extrema retain occupied-bin endpoints; vector envelopes use720angular sectors (0.5degrees) and retain the farthest occupied-bin centre in each. This is an excursion envelope, not a claim of pixel-identical Resolve contour rendering. Main-vector Combine requests Low/Mid/High count planes and snapshots retain these. Banding investigation and high-Q research remain paused.
+
+Development scope instances: up to four ordinary scope copies can be displayed with independent title-bar modes, Color/Extents, zoom, A/B/C banks and local Settings (Gain, Brightness, Graticule, Smooth, Reset). Global Gain scales local values proportionally; Brightness adds percentage-point deltas; unclamped relative offsets are retained. Global Smooth sets every current scope and the default for new ones; local overrides remain available. Q stays global. GPrime, Scopez Quest and the synthesizer remain singletons. Settings files include instance preferences, but snapshot banks stay on the device.
+
+The outer viewer manages layout, global controls, PAS and wake protection. Same-origin embedded renderers reuse the existing rendering engines. Compatible requests share validated count arrays by reference through bounded transport groups (at most four groups); they do not duplicate full-frame browser pixel transport. Different analysis settings use separate groups. The FPS readout averages the active renderers’ rates; payload rate counts shared network delivery once.
+
+Scope title bars suppress native pinch/double-tap page zoom while retaining ordinary controls. Scope surfaces and title bars disable text selection, native dragging and copy/context menus; plot gestures retain their existing scope zoom behavior.
+
+The individual scope Settings popup includes a 1×/2×/3×/4× cycling Zoom button synchronized with plot gestures. Each copy has its own zoom; Q remains global. Zoom uses the existing display transforms, without changing analysis resolution or counts.
+
+Individual Settings omits the visible diagnostic heading, uses available width for a single row and wraps when needed. Waveform Y/RGB/CbCr display paths now apply Gain and Brightness consistently in GPU and software rendering, including monochrome RGB overlays.
+
+Zoom above1×, whether chosen in local Settings or by gesture, displays the existing scope-header zoom/reset control. It reports total displayed magnification; Reset returns that scope to1× without changing neighbouring copies. The cube retains its Reset view action with the zoom value added while magnified.
+
+The GPrime tab beside Scopes opens a fixed single-GPrime page using the existing grading surface and setup prompt. It cannot be removed/replaced/expanded there. Scopes layouts and mounted instances remain intact across tab changes, including modes, zoom and references; inactive scope streams are paused. Settings layout controls continue to edit Scopes. GPrime’s setup shortcut opens its node assignments. Settings begins with Settings Presets (active preset plus right-aligned canonical online guide link), then Layout; CIE follows DoubleD, and GPrime Debug Options follows the global Debug switch.
+
+When GPrime is active, ordinary Scopes release analysis subscriptions and stop animation/reporting timers. Existing canvas/GPU buffers and snapshot memory remain cached for quick return; only GPrime requests its required analyses. Its waveform backdrop now shares corrected original-source column footprint rules with the regular waveform, eliminating the old empty-bin slicing path. A bounded reusable separable raster avoids a full-resolution summed-area allocation for the decorative overlay.
+
+New/resumed subscriptions request a fresh initial analysis matched by producer/instance/source sequence, rather than cache revision (different analysis deliveries can describe the same captured frame). Continuous delivery still permits correctly labelled completed frames while the next is analysed. On return from GPrime, ordinary scopes hide stale live canvases with Updating… until accepted data arrives; layout, gesture views and snapshot references stay cached. GTap already retains its latest captured image for reanalysis of new requests while paused.
+
+Contrast native feedback accepts the observed flags0/flags2 readback acknowledgements (including Clip Fullscreen), while still requiring the requested acknowledgement token followed by a fresh full Pivot snapshot. Wrong/nonfinite Pivot, missing snapshot and unrelated acknowledgements remain rejected; no cached-Pivot fallback or longer timeout was introduced. Both GPrime entry points use the same verifier.
+
+Home Screen navigation remembers Scopes/GPrime/Settings across Reload in browser-local preferences, including the underlying plot page when Settings is selected. Embedded scope navigation and ordinary browser launches do not overwrite that preference.
+
+GS → About Galaxy Scopes displays the same credits, signal-handling, placement and connection information as GTap’s About dialog. Its Project website button opens the canonical online guide. No local HTML guide is installed.

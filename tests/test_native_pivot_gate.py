@@ -70,3 +70,33 @@ class PivotGateTest(unittest.TestCase):
         panel.lock=threading.RLock();panel.feedback=bridge.PivotFeedback()
         panel.refresh_pivot=lambda:None
         with self.assertRaisesRegex(ValueError,'incomplete'):panel.primary_readback()
+
+
+class FullscreenPivotGateTest(unittest.TestCase):
+    def test_recorded_fullscreen_ack_then_real_snapshot(self):
+        import json
+        capture=Path(__file__).resolve().parents[1]/'docs/reverse-scopes/blackmagic-research/feedback-micro-present.json'
+        snapshots=[]
+        for item in json.loads(capture.read_text())['feedback']:
+            payload=bytes.fromhex(item.get('payload_hex',''))
+            if len(payload)<13:continue
+            size=struct.unpack_from('<I',payload,5)[0]
+            if size%9 or 13+size>len(payload):continue
+            if any(struct.unpack_from('<I',payload,i)[0]==0x14 for i in range(9,9+size,9)):
+                snapshots.append((4,0x400,0x4fff,0,payload))
+        self.assertTrue(snapshots)
+        # Exact readback acknowledgement recorded during the user's fullscreen failures.
+        ack=(4,0x400,0x4fff,0,bytes.fromhex('0100000000000000000400000001000000'))
+        gate=bridge.PivotFeedback();gate.request();self.assertFalse(gate.receive(ack))
+        self.assertTrue(gate.receive(snapshots[0]));self.assertTrue(gate.verified)
+        self.assertAlmostEqual(gate.pivot,.336,places=6)
+
+    def test_ack_variant_still_needs_fresh_pivot_and_rejects_other_flags_or_tokens(self):
+        for flags,token in [(1,1),(4,1),(0,2)]:
+            gate=bridge.PivotFeedback();gate.request()
+            ack=(4,0x400,0x4fff,0,struct.pack('<BIII',1,flags,0,4)+struct.pack('<I',token))
+            gate.receive(ack);self.assertFalse(gate.receive(frame(.336)));self.assertFalse(gate.verified)
+        gate=bridge.PivotFeedback();gate.receive(frame(.336));gate.request()
+        gate.receive((4,0x400,0x4fff,0,bytes.fromhex('0100000000000000000400000001000000')))
+        self.assertTrue(gate.pending);self.assertFalse(gate.verified)
+        self.assertTrue(gate.receive(frame(.435)));self.assertFalse(gate.verified)

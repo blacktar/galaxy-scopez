@@ -9,7 +9,7 @@ export function bindControlDock({doc=document,idleMs=3000}={}){
  let timer,keyboard=false,hovering=false;const pointers=new Set();
  // Place the disclosure between the two tabs without moving it into the tablist.
  const tabs=doc.querySelector('header>.view-tabs');
- const alignHandle=()=>{if(!tabs)return;const r=tabs.getBoundingClientRect(),h=dock.parentElement.getBoundingClientRect(),style=dock.parentElement.style;style.setProperty('--control-center',`${r.left+r.width/2-h.left}px`);const p=controlDockPosition({handle:handle.getBoundingClientRect(),parent:h,dockWidth:dock.getBoundingClientRect().width,viewportWidth:doc.documentElement.clientWidth,fullscreen:body.classList.contains('monitor')});style.setProperty('--control-dock-top',`${p.top}px`);style.setProperty('--control-dock-left',`${p.left}px`);};
+ const alignHandle=()=>{if(!tabs)return;const r=tabs.getBoundingClientRect(),gp=doc.getElementById('gprimetab')?.getBoundingClientRect(),settings=doc.getElementById('settings')?.getBoundingClientRect(),h=dock.parentElement.getBoundingClientRect(),style=dock.parentElement.style;style.setProperty('--control-center',`${(gp&&settings?(gp.right+settings.left)/2:r.left+r.width/2)-h.left}px`);const p=controlDockPosition({handle:handle.getBoundingClientRect(),parent:h,dockWidth:dock.getBoundingClientRect().width,viewportWidth:doc.documentElement.clientWidth,fullscreen:body.classList.contains('monitor')});style.setProperty('--control-dock-top',`${p.top}px`);style.setProperty('--control-dock-left',`${p.left}px`);};
  const resize=new ResizeObserver(alignHandle);resize.observe(dock.parentElement);if(tabs)resize.observe(tabs);resize.observe(handle);resize.observe(dock);alignHandle();
 
  const full=()=>body.classList.contains('monitor');

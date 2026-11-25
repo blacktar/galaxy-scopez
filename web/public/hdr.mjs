@@ -1,0 +1,9 @@
+// BT.2100 signal-scale conversion. HLG nits use a neutral reference display,
+// not a claim to recover scene luminance or a physical monitor measurement.
+import {pqLinear} from './pq-luminance.mjs';
+export function hdrTransfer(signal){return signal?.domain!=='working'&&signal?.primaries==='bt2020'&&['pq','hlg'].includes(signal?.transfer)?signal.transfer:null;}
+export function hlgGamma(peak=1000){if(!Number.isFinite(peak)||peak<400||peak>2000)throw Error('HLG reference peak must be 400–2000 nits');return 1.2+.42*Math.log10(peak/1000);}
+export function signalNits(code,transfer,peak=1000){if(!Number.isFinite(code)||code<0||code>1)return NaN;if(transfer==='pq')return 10000*pqLinear(code);if(transfer==='hlg'){const scene=code<=.5?code*code/3:(Math.exp((code-.55991073)/.17883277)+.28466892)/12;return peak*scene**hlgGamma(peak);}return NaN;}
+export function nitsSignal(nits,transfer,peak=1000){if(!Number.isFinite(nits)||nits<0||nits>(transfer==='pq'?10000:peak))throw Error('HDR reference outside signal range');if(transfer==='pq'){const p=(nits/10000)**(2610/16384);return ((3424/4096+(2413/128)*p)/(1+(2392/128)*p))**(2523/32);}const scene=(nits/peak)**(1/hlgGamma(peak));return scene<=1/12?Math.sqrt(3*scene):.17883277*Math.log(12*scene-.28466892)+.55991073;}
+export function hdrLabel(value){if(!Number.isFinite(value))return '—';return value<1?Number(value.toPrecision(2)).toString():Math.round(value).toLocaleString('en-US');}
+export function displayRange(data,{enabled=false,low=0,high=1000,hlgPeak=1000}={}){const c=data.config,t=hdrTransfer(data.source.signal);if(!enabled||!t)return [0,1];const peak=t==='pq'?10000:hlgPeak;if(!(low>=0&&high>low&&high<=peak))throw Error(`HDR range must satisfy 0 ≤ low < high ≤ ${peak} nits`);return [nitsSignal(low,t,hlgPeak),nitsSignal(high,t,hlgPeak)].map(v=>(v-c.min)/(c.max-c.min));}

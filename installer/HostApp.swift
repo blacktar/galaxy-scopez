@@ -15,7 +15,7 @@ final class HostApp: NSObject, NSApplicationDelegate {
         item.button?.toolTip = "Galaxy Scopez"
         let menu = NSMenu()
         menu.addItem(status)
-        for (title, selector) in [("Open Viewer", #selector(viewer)), ("Enable Resolve controls…", #selector(enableResolveControls)), ("Open User Guide", #selector(guide)), ("Start Server", #selector(start)), ("Stop Server", #selector(stop)), ("Show Log", #selector(showLog)), ("Quit Galaxy Scopez", #selector(quit))] {
+        for (title, selector) in [("Open Viewer", #selector(viewer)), ("Enable Resolve controls…", #selector(enableResolveControls)), ("Open User Guide", #selector(guide)), ("Start Server", #selector(start)), ("Stop Server", #selector(stop)), ("Show Log", #selector(showLog)), ("About Galaxy Scopes", #selector(about)), ("Quit Galaxy Scopez", #selector(quit))] {
             let entry = NSMenuItem(title: title, action: selector, keyEquivalent: "")
             entry.target = self
             menu.addItem(entry)
@@ -123,6 +123,17 @@ final class HostApp: NSObject, NSApplicationDelegate {
     @objc func enableResolveControls() { explainResolveControls() }
     @objc func viewer() { NSWorkspace.shared.open(URL(string: "http://localhost:8765/scopes.html")!) }
     @objc func guide() { NSWorkspace.shared.open(URL(string: "https://vidarandersen.com/dmz/galaxyscopez/")!) }
+    @objc func about() {
+        let alert = NSAlert()
+        alert.messageText = "About Galaxy Scopes"
+        alert.informativeText = "Made by Vidar Andersen. Free and open source.\nFor more: https://vidarandersen.com/dmz/galaxyscopez/\n\nSends this node's full-resolution float32 RGB pixels to Galaxy Scopez in a browser on any device on your network. The image passes through unchanged.\n\nSOURCE / WORKING-SPACE TAP\nChoose Source / working-space RGB in Input to measure float32 RGB exactly at this node without a colour transform. Negative and above-one values are retained. Primaries and transfer remain unknown; this mode does not infer your project colour space. Weighted RGB and difference views use fixed BT.709 analysis coefficients, not calibrated working-space luma/chroma. Display targets and the skin-tone guide are hidden. RGB preview/trace colours are raw visualisations, not colour-managed previews.\n\nWHERE TO PLACE IT\nGrade → output CST / display transform → GTap → Output\n\nAdd a separate serial node directly after the node that converts your grade into the intended display/output space. Apply GTap to that new node. Choose the matching encoded RGB declaration in Input: BT.709 or BT.2020. GTap applies no colour transform.\n\nGTap reads its own node's input; later transforms are not included. If Resolve Color Management or ACES applies the output transform after the node graph, simply putting GTap last does not make its input display-referred. Do not declare working-space or log pixels as display-encoded RGB.\n\nHOW TO CONNECT\nUse Open this address to open the scopes in this Mac's default browser, or copy the scopes URL into the receiving device's browser, then select Start listening. Sending is active whenever Resolve renders GTap with a declared input. Refresh status updates the viewer list. Alternate addresses are under Advanced."
+        alert.addButton(withTitle: "Close")
+        alert.addButton(withTitle: "Project website")
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertSecondButtonReturn {
+            guide()
+        }
+    }
     @objc func showLog() { NSWorkspace.shared.open(logURL) }
     @objc func quit() { nativeControls?.stop(); stop(); child?.waitUntilExit(); NSApplication.shared.terminate(nil) }
     func applicationWillTerminate(_ notification: Notification) { nativeControls?.stop(); stop(); child?.waitUntilExit() }

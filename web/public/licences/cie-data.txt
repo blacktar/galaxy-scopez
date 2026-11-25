@@ -1,0 +1,14 @@
+CIE observer data and derived spectral/black-body loci
+Copyright International Commission on Illumination (CIE), 2019.
+CIE 2019, Colour-matching functions of CIE 1931 standard colorimetric observer,
+International Commission on Illumination (CIE), Vienna, AT.
+DOI: https://doi.org/10.25039/CIE.DS.xvudnb9b
+Source: https://cie.co.at/datatable/cie-1931-colour-matching-functions-2-degree-observer
+Licence: Creative Commons Attribution-ShareAlike 4.0 International.
+https://creativecommons.org/licenses/by-sa/4.0/
+Full licence: CC-BY-SA-4.0.txt in this directory.
+
+Galaxy Scopez derives spectral xy coordinates at 5nm intervals and integrates
+Planck spectra against the observer to construct the black-body locus.
+These derived data remain CC BY-SA4.0, separately from the application's
+CC BY-NC-SA4.0 licence. No CIE endorsement is implied.

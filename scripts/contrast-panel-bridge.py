@@ -39,7 +39,10 @@ class PivotFeedback:
         if size%9 or end+4>len(payload):return False
         custom,=struct.unpack_from('<I',payload,end)
         if end+4+custom!=len(payload):return False
-        if self.pending and state_flags==2 and payload[end+4:]==b'\x01\x00\x00\x00':
+        # Resolve acknowledges the same readback token with flags 0 in Clip
+        # Fullscreen and flags 2 in the normal UI. Both must still be followed
+        # by a fresh full snapshot containing Pivot; cached values never pass.
+        if self.pending and state_flags in (0,2) and payload[end+4:]==b'\x01\x00\x00\x00':
             self.acknowledged=True
         found=False
         snapshot={}

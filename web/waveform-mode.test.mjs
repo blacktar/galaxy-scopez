@@ -1,0 +1,26 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {analyzeFrame,configuration} from './scopes.mjs';
+import {waveformMode,waveformScopes} from './public/waveform-mode.mjs';
+import {scopePacket,unpackScope,scopeFields} from './public/scope-wire.mjs';
+import {renderSoftware} from './public/software-renderer.mjs';
+import {captureSnapshot,snapshotCompatibility,SnapshotBank} from './public/snapshots.mjs';
+const frame={width:4,height:1,data:Float32Array.of(0,0,0,1,1,1,0,0,1,1,0,0),signal:{model:'RGB',range:'full',matrix:'bt709',codeBits:10}};
+test('wave modes reject unknown values and request only their extra analysis',()=>{assert.equal(waveformMode(),'y');assert.throws(()=>waveformMode('foo'));assert.deepEqual(waveformScopes([0,-1,-1,-1],'rgb',{scopes:[0,1]}),[0,1]);assert.deepEqual(waveformScopes([0,-1,-1,-1],'cbcr',{scopes:[0]}),[0,12]);assert.deepEqual(waveformScopes([18,-1,-1,-1],'cbcr',{scopes:[3]}),[3]);assert.equal(configuration().waveMode,'y');});
+test('CbCr counts preserve columns, neutral centre and blue/red extrema',()=>{const d=analyzeFrame(frame,{activeScopes:[12],waveMode:'cbcr'}),c=d.config,bin=(ch,x,v)=>(ch*c.levels+Math.round((v+.5)*(c.levels-1)))*c.waveWidth+Math.floor(x*c.waveWidth/4);assert.equal(d.waveChroma.reduce((a,b)=>a+b,0),8);for(const ch of [0,1])for(const x of [0,1])assert.equal(d.waveChroma[bin(ch,x,0)],1);assert.equal(d.waveChroma[bin(0,2,.5)],1);assert.equal(d.waveChroma[bin(1,3,.5)],1);});
+test('CbCr respects ROI, isolation, non-finite samples and excursions without clipping',()=>{const f={...frame,data:Float32Array.of(NaN,0,0,0,0,3,0,0,1,1,0,0)};const d=analyzeFrame(f,{activeScopes:[12],x0:1,x1:3,waveMode:'cbcr'});assert.equal(d.waveChroma.reduce((a,b)=>a+b,0),3);const off=analyzeFrame(frame,{activeScopes:[0]});assert.equal(off.waveChroma.length,1);assert.ok(!scopeFields(off).includes('waveChroma'));});
+test('optional chroma wire plane coexists with CIE and round trips exact counts',()=>{for(const activeScopes of [[12],[11,12]]){const d=analyzeFrame(frame,{activeScopes,waveMode:'cbcr'}),r=unpackScope(scopePacket(d,1,1).buffer);assert.deepEqual(r.waveChroma,d.waveChroma);assert.equal(scopeFields(d).at(-1),'waveChroma');}});
+test('RGB waveform overlay channel toggles affect pixels, not measured counts',()=>{const d=analyzeFrame(frame,{activeScopes:[0,1],waveMode:'rgb'}),opts={waveColourMode:'source',waveChannels:[true,false,false]},style={gain:1,brightness:100,smooth:false},red=renderSoftware(d,0,40,30,style,opts),none=renderSoftware(d,0,40,30,style,{...opts,waveChannels:[false,false,false]});assert.ok(red.some((v,i)=>i%4===0&&v>none[i]));assert.equal(d.parade.reduce((a,b)=>a+b,0),12);assert.ok(none.every((v,i)=>v===(i%4===3?255:9)));});
+test('wave snapshots retain mode counts and hide incompatible modes',()=>{const rgb=analyzeFrame(frame,{activeScopes:[0,1],waveMode:'rgb'}),cb=analyzeFrame(frame,{activeScopes:[12],waveMode:'cbcr'});for(const d of [rgb,cb]){const snap=captureSnapshot(d,0);assert.ok(snap.data[d.config.waveMode==='rgb'?'parade':'waveChroma']);const bank=new SnapshotBank();bank.restore([[0,[snap]]]);assert.equal(bank.slots(0).length,1);}assert.equal(snapshotCompatibility(rgb,cb,0),false);});
+
+import {parkingMeasurements,parkingSettings} from './public/parking-analysis.mjs';
+test('waveform parking uses RGB channel levels and suppresses luma warnings in CbCr',()=>{const rgb=analyzeFrame({...frame,width:1,data:Float32Array.of(1.2,0,0)},{activeScopes:[0,1],waveMode:'rgb'});assert.equal(parkingMeasurements(rgb,0,parkingSettings()).high,rgb.stats[0].max);const cb=analyzeFrame(frame,{activeScopes:[0,12],waveMode:'cbcr'});assert.equal(parkingMeasurements(cb,0,parkingSettings()).high,null);assert.equal(parkingMeasurements(cb,0,parkingSettings()).low,null);});
+
+test('source columns narrower than waveform grid have no periodic display gaps, while counts stay exact',()=>{
+ for(const waveMode of ['y','rgb','cbcr']){
+  const f={width:15,height:2,data:new Float32Array(15*2*3).fill(.5),signal:frame.signal},d=analyzeFrame(f,{waveMode,vectorDisplayScale:4,activeScopes:[0,1,12]}),plane=d[waveMode==='rgb'?'parade':waveMode==='cbcr'?'waveChroma':'wave'],before=plane.slice();
+  const pixels=renderSoftware(d,0,127,32,{gain:1,brightness:100,smooth:false},{waveColourMode:'mono'}),columns=Array.from({length:127},(_,x)=>{let total=0;for(let y=0;y<32;y++)total+=pixels[(y*127+x)*4];return total;});
+  assert.ok(columns.every(x=>x===columns[0]),waveMode+' uniform columns');assert.ok(columns[0]>32*9);assert.deepEqual(plane,before);
+ }
+});
+
+test('waveform display gain and brightness affect Y, RGB and CbCr monochrome traces without changing counts',()=>{for(const waveMode of ['y','rgb','cbcr']){const d=analyzeFrame(frame,{waveMode,activeScopes:[0,1,12]}),before=(waveMode==='rgb'?d.parade:waveMode==='cbcr'?d.waveChroma:d.wave).slice();const pixels=style=>renderSoftware(d,0,128,64,{smooth:false,...style},{waveColourMode:'mono'});const total=p=>p.reduce((n,v,i)=>n+(i%4===3?0:v),0);const low=total(pixels({gain:.1,brightness:25})),gain=total(pixels({gain:1,brightness:25})),bright=total(pixels({gain:1,brightness:100}));assert.ok(gain>low,waveMode+' gain');assert.ok(bright>gain,waveMode+' brightness');assert.deepEqual(waveMode==='rgb'?d.parade:waveMode==='cbcr'?d.waveChroma:d.wave,before);}});

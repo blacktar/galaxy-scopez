@@ -1,9 +1,8 @@
+import {rasterWaveformDensity} from './waveform-footprint.mjs';
 // Bounded decorative waveform raster. Use existing measured bins; no source pixels retained.
 export function waveformBackdrop(data,width=384,height=192){
  const {waveWidth:sw,levels:sh}=data.config,w=Math.min(width,sw),h=Math.min(height,sh);
- const counts=new Float64Array(w*h),pixels=new Uint8ClampedArray(w*h*4);
- for(let sy=0;sy<sh;sy++){const row=(h-1-Math.min(h-1,Math.floor(sy*h/sh)))*w;
-  for(let sx=0;sx<sw;sx++){const value=data.wave[sy*sw+sx];if(value)counts[row+Math.min(w-1,Math.floor(sx*w/sw))]+=value;}}
+ const counts=rasterWaveformDensity(data.wave,sw,sh,data.source?.region?.width??sw,w,h),pixels=new Uint8ClampedArray(w*h*4);
  for(let i=0;i<counts.length;i++){const alpha=Math.round(Math.min(1,Math.log1p(counts[i])*.25)*.82*255);if(!alpha)continue;const at=i*4;pixels[at]=pixels[at+1]=pixels[at+2]=220;pixels[at+3]=alpha;}
  return {width:w,height:h,pixels};
 }

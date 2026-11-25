@@ -14,14 +14,14 @@ test('vertical vector stacks place highs above mids above lows and collapse empt
 
 test('separate histogram can coexist with overlay and shares its exact analysis plane',async()=>{
  const {validLayout,assignSlot,analysisScopes,SCOPE_NAMES}=await import('./public/layout.mjs');
- assert.equal(SCOPE_NAMES[8],'RGB histogram · Separate');assert.ok(validLayout([2,8,6,7]));
+ assert.equal(SCOPE_NAMES[8],'Histogram · Separate');assert.ok(validLayout([2,8,6,7]));
  assert.deepEqual(assignSlot([4,5,6,7],0,8),[8,5,6,7]);assert.deepEqual(analysisScopes([8,-1,-1,-1]),[2]);assert.deepEqual(analysisScopes([2,8,6,7]),[2,6,7]);
  const {analyzeFrame,makeFixture}=await import('./scopes.mjs');const source=makeFixture('tonal-casts');
  const full=analyzeFrame(source,{bits:12});const selected=analyzeFrame(source,{bits:12,activeScopes:analysisScopes([8,-1,-1,-1])});
  assert.deepEqual(selected.hist,full.hist);assert.equal(selected.hist.length,3*4096);assert.equal(selected.samples,full.samples);
 });
 
-test('High Mid Low strip occupies one slot and requests original split planes once',async()=>{const {assignSlot,analysisScopes,validLayout}=await import('./public/layout.mjs');assert.deepEqual(assignSlot([4,5,6,7],0,9),[9,-1,-1,7]);assert.ok(validLayout([9,8,-1,7]));assert.deepEqual(analysisScopes([9,8,-1,7]),[2,4,5,6,7]);assert.deepEqual(assignSlot([9,8,-1,7],2,4),[-1,8,4,7]);for(const mode of LAYOUT_MODES){const g=arrangeLayout([9,8,-1,7],mode);assert.equal(Object.keys(g.positions).length,mode==='single'?1:mode==='two'?2:3);}});
+test('High Mid Low strip occupies one slot and requests original split planes once',async()=>{const {assignSlot,analysisScopes,validLayout}=await import('./public/layout.mjs');assert.deepEqual(assignSlot([4,5,6,7],0,9),[9,5,6,7]);assert.ok(validLayout([9,8,-1,7]));assert.deepEqual(analysisScopes([9,8,-1,7]),[2,4,5,6,7]);assert.deepEqual(assignSlot([9,8,-1,7],2,4),[9,8,4,7]);for(const mode of LAYOUT_MODES){const g=arrangeLayout([9,8,-1,7],mode);assert.equal(Object.keys(g.positions).length,mode==='single'?1:mode==='two'?2:3);}});
 
 test('individual RGB histograms are independently selectable and share exact analysis',async()=>{const {validLayout,analysisScopes,assignSlot}=await import('./public/layout.mjs');assert.ok(validLayout([10,11,12,8]));assert.deepEqual(analysisScopes([10,11,12,8]),[2]);assert.deepEqual(assignSlot([4,5,6,7],0,10),[10,5,6,7]);});
 
@@ -36,3 +36,5 @@ test('GPrime is a selectable scope requesting only the live vector plane',async(
  assert.deepEqual(analysisScopes([3,-1,-1,18]),[3]);
  assert.deepEqual(assignSlot([4,5,6,7],3,18),[4,5,6,18]);
 });
+
+test('duplicate plot types occupy independent slots in grid and two-up layouts',async()=>{const {validLayout,assignSlot,twoLayout}=await import('./public/layout.mjs');assert.equal(validLayout([3,3,3,3]),true);assert.equal(validLayout([9,4,5,6]),true);assert.deepEqual(assignSlot([3,7,-1,-1],1,3),[3,3,-1,-1]);assert.deepEqual(twoLayout([3,3,-1,-1]),[3,-1,-1,3]);assert.equal(validLayout([18,18,-1,-1]),false);});

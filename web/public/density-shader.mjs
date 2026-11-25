@@ -1,11 +1,33 @@
 // Integrate piecewise-constant bin density over the exact pixel footprint.
 // Integer interval endpoints avoid boundary drift; counts remain uint32 in texels.
 export const DENSITY_SHADER=`
+uniform int waveColumns;uniform int paradeCount;uniform vec2 densityYRange;
+// Every waveform/parade uses the same original-image-column footprint.
+// A grid bin may pool several source columns; divide its count by that exact
+// population when distributing it across the image interval it represents.
+vec4 waveformFootprint(ivec2 pixel,ivec2 size){
+ int channels=mode==1&&paradeCount>=3?paradeCount:1,ch=(2*pixel.x+1)*channels/(2*viewportSize.x);
+ float dx=float(channels*waveColumns)/float(viewportSize.x),left=float(pixel.x*channels-ch*viewportSize.x)*float(waveColumns)/float(viewportSize.x);
+ left=clamp(left,0.,max(0.,float(waveColumns)-dx));
+ vec2 bounds=mode==1&&densityYRange.y>densityYRange.x?densityYRange:vec2(0,1);return vec4(left,(bounds.x+float(pixel.y)/float(viewportSize.y)*(bounds.y-bounds.x))*float(size.y),min(float(waveColumns),left+dx),(bounds.x+float(pixel.y+1)/float(viewportSize.y)*(bounds.y-bounds.x))*float(size.y));
+}
+ivec2 waveformBinsX(vec4 f,int width){return ivec2(clamp(int(floor(f.x)),0,waveColumns-1)*width/waveColumns,clamp(int(ceil(f.z))-1,0,waveColumns-1)*width/waveColumns);}
+float waveformWeightX(vec4 f,int x,int width){
+ int first=(x*waveColumns+width-1)/width,last=((x+1)*waveColumns+width-1)/width;if(last<=first)return 0.;
+ return max(0.,min(f.z,float(last))-max(f.x,float(first)))/float(last-first)/min(f.z-f.x,1.);
+}
+float waveformWeightY(vec4 f,int y){return max(0.,min(f.w,float(y+1))-max(f.y,float(y)))/min(f.w-f.y,1.);}
 float densityAtPixel(usampler2D tex,vec2 q,ivec2 pixel){
  ivec2 sz=textureSize(tex,0),scale=viewportSize;
- int ch=(2*pixel.x+1)*3/(2*viewportSize.x);
- int left=(mode==1||mode==5)?pixel.x*3-ch*viewportSize.x:pixel.x;
- int right=(mode==1||mode==5)?(pixel.x+1)*3-ch*viewportSize.x:pixel.x+1;
+ if((mode==0||mode==1||mode==7||mode==8)&&waveColumns>0){
+  vec4 f=waveformFootprint(pixel,sz);ivec2 columns=waveformBinsX(f,sz.x);float n=0.;
+  for(int y=max(0,int(floor(f.y)));y<min(sz.y,int(ceil(f.w)));y++)for(int x=columns.x;x<=columns.y;x++)n+=float(texelFetch(tex,ivec2(x,y),0).r)*waveformWeightX(f,x,sz.x)*waveformWeightY(f,y);
+  return n;
+ }
+ int channels=mode==1&&paradeCount>=3?paradeCount:mode==5?textureSize(tex,0).y:3;
+ int ch=(2*pixel.x+1)*channels/(2*viewportSize.x);
+ int left=(mode==1||mode==5)?pixel.x*channels-ch*viewportSize.x:pixel.x;
+ int right=(mode==1||mode==5)?(pixel.x+1)*channels-ch*viewportSize.x:pixel.x+1;
  ivec2 begin=ivec2(left*sz.x,pixel.y*sz.y),end=ivec2(right*sz.x,(pixel.y+1)*sz.y);
  if(mode==3){
   // Project onto the full rectangular surface; chroma retains equal axis scale.

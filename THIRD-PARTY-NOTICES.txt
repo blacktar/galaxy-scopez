@@ -174,3 +174,13 @@ GPrime workflow and node structure inspired by Cullen Kelly:
 https://www.youtube.com/@CullenKelly — https://cullenkellycolor.com/
 Referent LUT is referenced by the supplied DRX but is not bundled:
 https://cullenkellycolor.com/toolkit/referent
+
+CIE standard observer dataset and derived chromaticity loci — CC BY-SA 4.0
+International Commission on Illumination (CIE), 2019.
+Colour-matching functions of CIE 1931 standard colorimetric observer.
+https://doi.org/10.25039/CIE.DS.xvudnb9b
+https://cie.co.at/datatable/cie-1931-colour-matching-functions-2-degree-observer
+Spectral xy coordinates are derived at 5nm intervals; the black-body locus is
+derived by Planck-spectrum integration. These derived data retain CC BY-SA4.0
+separately from the application's licence. See host/web/public/licences/cie-data.txt
+and host/web/public/licences/CC-BY-SA-4.0.txt in the installed app.
