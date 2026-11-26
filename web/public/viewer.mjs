@@ -1,3 +1,4 @@
+import {mountQuestGamepad} from './quest-gamepad.mjs';
 import {mountGamepadClient} from './gamepad-client.mjs';
 import {mountGamepadSettings} from './gamepad-settings.mjs';
 import {createScopeHost} from './scope-host.mjs';
@@ -424,6 +425,7 @@ if(homeScreenLaunch&&!embedded&&$('gprimetab')){try{const saved=JSON.parse(local
 
 
 if(!embedded){
- const broker=mountGamepadClient({toggleView:()=>selectPage(gprimePage?'scopes':'gprime'),balanceView:()=>gprimeView?.gamepad.action('balanceView'),onResult:(action,result)=>gprimeView?.controllerResult(action,result)});
- let mounted=false;broker.subscribe(state=>{if(state&&!mounted){mounted=true;mountGamepadSettings({navigator:broker.navigator,storage:broker.storage,broker});}});
+ const questController=mountQuestGamepad({card:ogCard,isVisible:()=>!document.hidden&&!$('scopeview').hidden&&!gprimePage&&!ogCard.hidden,isListening:()=>streaming||listenWhenConnected,canListen:()=>$('inputsource').value==='resolve',startListening:start,armAudio:()=>ogView?.armAudio(),openSettings:()=>{const ready=ensureGradingSettings();selectPage('settings');Promise.resolve(ready).then(()=>$('gprimegamepad')?.scrollIntoView({block:'start'}));}});
+ const broker=mountGamepadClient({toggleView:()=>selectPage(gprimePage?'scopes':'gprime'),balanceView:()=>gprimeView?.gamepad.action('balanceView'),onResult:(action,result)=>{gprimeView?.controllerResult(action,result);questController.gradingResult(action);}});
+ let mounted=false;broker.subscribe(state=>{questController.update(state);if(state&&!mounted){mounted=true;mountGamepadSettings({navigator:broker.navigator,storage:broker.storage,broker});}});
 }

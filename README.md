@@ -27,7 +27,7 @@ Later keeps it available under GS → Enable Resolve controls… .
 
 ## Install and start
 
-This release includes **GTap 1.2.35** and **viewer 0.6.0**.
+This release includes **GTap 1.2.35** and **viewer 0.6.1**.
 The supplied universal GTap binary requires **macOS 27 or later** (Apple silicon
 or Intel). Earlier macOS versions have not been verified for this release.
 DaVinci Resolve is required. The new `.pkg` installer bundles the server,
@@ -202,3 +202,5 @@ GS owns the selected input and runs the grading interpreter independently of bro
 Controller shortcuts retain their recorded combination until the main button is released, suppress base actions and wait for in-flight GPrime readiness. Changing the input owner cancels a waiting shortcut; errors remain visible briefly. Gamepad Settings follow the complete GPrime setup section; Control bindings start collapsed. Single GPrime layouts stretch the grading surface to fill available card height; mixed-scope caps and narrow portrait stacking remain.
 
 Known limitation: an intermittent browser focus change with detached non-fullscreen Resolve Scopes remains unresolved; the latest user-operated capture did not reproduce it.
+
+Release 0.6.1 connects Scopez Quest to the shared GPrime gamepad controls. Its header links to controller setup and shows selected-source status. Grading input starts the real Resolve feed when Quest is visible; hidden Quest does not resume listening. Stopping listening during a held adjustment stays stopped until the next gesture. Existing GPrime mappings and host/viewer selection apply, and only real GTap signal bins score.

@@ -1,6 +1,6 @@
 # Browser viewer
 
-Current release: **viewer 0.6.0**; release effect: **GTap 1.2.35**.
+Current release: **viewer 0.6.1**; release effect: **GTap 1.2.35**.
 
 Use [README.md](README.md) for installation or
 [the online user guide](https://vidarandersen.com/dmz/galaxyscopez/) for everyday use.
@@ -156,3 +156,5 @@ GS owns the selected input and runs the grading interpreter independently of bro
 Controller shortcuts retain their recorded combination until the main button is released, suppress base actions and wait for in-flight GPrime readiness. Changing the input owner cancels a waiting shortcut; errors remain visible briefly. Gamepad Settings follow the complete GPrime setup section; Control bindings start collapsed. Single GPrime layouts stretch the grading surface to fill available card height; mixed-scope caps and narrow portrait stacking remain.
 
 Known limitation: an intermittent browser focus change with detached non-fullscreen Resolve Scopes remains unresolved; the latest user-operated capture did not reproduce it.
+
+Release 0.6.1 connects Scopez Quest to the shared GPrime gamepad controls. Its header links to controller setup and shows selected-source status. Grading input starts the real Resolve feed when Quest is visible; hidden Quest does not resume listening. Stopping listening during a held adjustment stays stopped until the next gesture. Existing GPrime mappings and host/viewer selection apply, and only real GTap signal bins score.
