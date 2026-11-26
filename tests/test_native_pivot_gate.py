@@ -100,3 +100,57 @@ class FullscreenPivotGateTest(unittest.TestCase):
         gate.receive((4,0x400,0x4fff,0,bytes.fromhex('0100000000000000000400000001000000')))
         self.assertTrue(gate.pending);self.assertFalse(gate.verified)
         self.assertTrue(gate.receive(frame(.435)));self.assertFalse(gate.verified)
+
+class PrimaryRecoveryTest(unittest.TestCase):
+    def panel(self, replies):
+        import threading
+        from types import SimpleNamespace
+        panel=object.__new__(bridge.ContrastPanelBridge)
+        panel.lock=threading.RLock()
+        panel.feedback_ready=threading.Condition(panel.lock)
+        panel.feedback=bridge.PivotFeedback();panel.generation=1
+        panel.protocol=SimpleNamespace(connected=True)
+        panel.status=lambda:{'ready':True}
+        packets=[]
+        def send(data,kind):
+            packets.append((bridge.wire.HEADER.unpack(data[:12])[1:3],kind,data[12:]))
+            if kind=='user-pivot-readback':
+                panel.feedback.receive(frame(ack=True))
+                for response in next(replies):panel.feedback.receive(response)
+        panel._send=send
+        return panel,packets
+
+    def missing(self):
+        return (4,0x400,0x4fff,0,struct.pack('<BII',1,0x72000000,90)+
+                b''.join(struct.pack('<IBf',0x1db+i,3,0) for i in range(10))+struct.pack('<I',0))
+
+    def test_missing_primaries_recovers_once_then_requires_fresh_snapshot(self):
+        panel,packets=self.panel(iter([[self.missing()],[frame(.336)]]))
+        self.assertAlmostEqual(panel.refresh_pivot(),.336,places=6)
+        self.assertTrue(panel.feedback.verified)
+        self.assertEqual([p[1] for p in packets],['user-pivot-readback','recover-primary-feedback','user-pivot-readback'])
+        self.assertEqual(packets[1][0],(3,0x2282))
+        self.assertEqual(packets[1][2],b'\x01\x00')
+
+    def test_healthy_or_wrong_pivot_does_not_change_palette(self):
+        for value in (.336,.435):
+            panel,packets=self.panel(iter([[frame(value)]]))
+            self.assertAlmostEqual(panel.refresh_pivot(),value,places=6)
+            self.assertEqual(len(packets),1)
+            self.assertEqual(panel.feedback.verified,value==.336)
+
+    def test_recovery_failure_is_bounded_and_cannot_accept_cached_pivot(self):
+        from unittest.mock import patch
+        panel,packets=self.panel(iter([[self.missing()],[self.missing()]]))
+        panel.feedback.receive(frame(.336))
+        with patch.object(bridge.time,'monotonic',side_effect=range(0,20,2)):
+            with self.assertRaisesRegex(ValueError,'after automatic recovery'):panel.refresh_pivot()
+        self.assertFalse(panel.feedback.verified)
+        self.assertFalse(panel.feedback.pending)
+        self.assertEqual(len(packets),3)
+
+    def test_connection_change_aborts_without_palette_or_grade_commands(self):
+        panel,packets=self.panel(iter([]))
+        panel._send=lambda *_:setattr(panel,'generation',2)
+        with self.assertRaisesRegex(ValueError,'connection changed'):panel.refresh_pivot()
+        self.assertFalse(packets)

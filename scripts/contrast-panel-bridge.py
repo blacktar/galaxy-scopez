@@ -43,10 +43,11 @@ class PivotFeedback:
         self.pending = False
         self.acknowledged = False
         self.verified = False
+        self.missing_primaries = False
 
     def request(self):
         self.pending = True
-        self.acknowledged = self.verified = False
+        self.acknowledged = self.verified = self.missing_primaries = False
 
     def receive(self, frame):
         dest, command, target, flags, payload = frame
@@ -74,6 +75,8 @@ class PivotFeedback:
                 found=True
                 if self.pivot is None or abs(self.pivot-PIVOT_TARGET)>PIVOT_TOLERANCE:
                     self.verified=False
+        if self.pending and self.acknowledged and size>=90 and not found:
+            self.missing_primaries = True
         if self.pending and self.acknowledged and size>=90 and found:
             self.pending=False
             self.values=snapshot
@@ -200,6 +203,8 @@ class ContrastPanelBridge:
                             if self.feedback.receive(frame):
                                 self._log('pivot-refresh',pivot=self.feedback.pivot,verified=self.feedback.verified)
                                 self.feedback_ready.notify_all()
+                            if self.feedback.missing_primaries:
+                                self.feedback_ready.notify_all()
                             response = self.protocol.receive(frame)
                             if response:
                                 self._send(response, 'status-response')
@@ -209,22 +214,32 @@ class ContrastPanelBridge:
                 self._disconnect()
 
     def refresh_pivot(self):
-        """Request readback only; never selects or navigates a Resolve node."""
+        """Fresh readback, with one native Primaries-context recovery; no grade replay."""
         with self.feedback_ready:
             if not self.status()['ready']:raise ValueError('Waiting for Resolve panel connection.')
             connection=self.generation
-            self.feedback.request()
-            self._send(wire.packet(0x400,0,struct.pack('<II',1,1)), 'user-pivot-readback')
-            deadline=time.monotonic()+1.5
-            while self.feedback.pending:
-                remaining=deadline-time.monotonic()
-                if remaining<=0:
-                    self.feedback.verified=False
-                    raise ValueError('Fresh Pivot feedback timed out. No Contrast adjustment sent.')
-                self.feedback_ready.wait(remaining)
+            for attempt in range(2):
+                if attempt:
+                    # Installed native mapping: STEINWAY_KEY_PRIMARY 0x182 ->
+                    # getPanel=1, getControl=0x82, device base=0x2000,
+                    # KeyPressToApp command3 / target0x2282. Opens Color Wheels;
+                    # no reset, encoder movement, node selection or OS focus action.
+                    self._send(wire.packet(3,0x2282,b'\x01\x00'), 'recover-primary-feedback')
+                self.feedback.request()
+                self._send(wire.packet(0x400,0,struct.pack('<II',1,1)), 'user-pivot-readback')
+                deadline=time.monotonic()+1.5
+                while self.feedback.pending:
+                    if connection!=self.generation or not self.protocol.connected:
+                        raise ValueError('Panel connection changed during Pivot verification.')
+                    remaining=deadline-time.monotonic()
+                    if remaining<=0 or (not attempt and self.feedback.missing_primaries):break
+                    self.feedback_ready.wait(remaining)
                 if connection!=self.generation or not self.protocol.connected:
                     raise ValueError('Panel connection changed during Pivot verification.')
-            return self.feedback.pivot
+                if not self.feedback.pending:return self.feedback.pivot
+            self.feedback.verified=False
+            self.feedback.pending=False
+            raise ValueError('Fresh Primaries feedback unavailable after automatic recovery. No further grading adjustment sent.')
 
     def verify_pivot(self):
         pivot=self.refresh_pivot()
