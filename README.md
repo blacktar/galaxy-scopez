@@ -203,4 +203,6 @@ Controller shortcuts retain their recorded combination until the main button is 
 
 Known limitation: an intermittent browser focus change with detached non-fullscreen Resolve Scopes remains unresolved; the latest user-operated capture did not reproduce it.
 
-Release 0.6.1 connects Scopez Quest to the shared GPrime gamepad controls. Its header links to controller setup and shows selected-source status. Grading input starts the real Resolve feed when Quest is visible; hidden Quest does not resume listening. Stopping listening during a held adjustment stays stopped until the next gesture. Existing GPrime mappings and host/viewer selection apply, and only real GTap signal bins score.
+Release 0.6.1 connects Scopez Quest to the shared GPrime gamepad controls. Its header links to controller setup and shows selected-source status. Grading input starts the real Resolve feed when Quest is visible; hidden Quest does not resume listening. Stopping listening during a held adjustment stays stopped until the next gesture. Existing GPrime mappings and host/viewer selection apply.
+
+GPrime node assignments and preflight are always mounted in Settings after Layout and before Gamepad settings, independent of the selected scope or first-opened tab.

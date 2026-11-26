@@ -44,7 +44,7 @@ import {DEFAULT_LAYOUT,SCOPE_NAMES,validLayout,assignSlot,arrangeLayout,LAYOUT_M
 import {MATRICES} from './signal.mjs';
 import {unpackScope} from './scope-wire.mjs';
 let ogView=null,parking=null,gprimeView=null,gradingMounted=false,gradingReady=null;
-function ensureGradingSettings(){if(gradingMounted)return gradingReady;gradingMounted=true;return gradingReady=import('./grading-audition.mjs').then(m=>m.mountGradingAudition()).catch(reportClientError);}
+function ensureGradingSettings(){if(gradingMounted||gradingReady)return gradingReady;return gradingReady=import('./grading-audition.mjs').then(m=>{m.mountGradingAudition();gradingMounted=true;}).catch(error=>{gradingReady=null;gradingMounted=false;reportClientError(error);});}
 const embedded=window.__scopeEmbedded??null;let instances=null;let embeddedPreview=null,embeddedParkingKey=null;
 let instanceActive=true,animationFrame=0,resumePending=false;let gprimePage=false;const shownScopes=()=>gprimePage?[-1,-1,-1,18]:layout;
 let viewerSettings=null;const $=id=>document.getElementById(id);const names=SCOPE_NAMES;let socket,frames=0,last=performance.now(),renderTotal=0,renderCount=0,received=0,latest=null,timer,lastReport=0,streaming=false,generation=0,lastSeq=-1,painted=null,displayDropped=0,draws=0,dirty=false,awaitingStart=false;
@@ -345,7 +345,7 @@ $('vectordetail').onchange=()=>{syncDetail();if(streaming)start();};$('fullscree
 const updateIsolationControls=()=>{$('isolationcontrols').hidden=$('isolation').value==='off';};updateIsolationControls();
 $('isolationcolour').oninput=()=>{const v=$('isolationcolour').value,parts=[1,3,5].map(i=>parseInt(v.slice(i,i+2),16)/255);$('hueCenter').value=Math.round(hsv(...parts).h*360);$('isolation').value='colour';updateIsolationControls();};$('isolationcolour').onchange=()=>{if(streaming)start();};
 $('axisunit').onchange=()=>{axesKey='';dirty=true;};$('targets').onchange=()=>{try{localStorage.setItem('scopeReference_targets',String($('targets').checked));}catch{}referenceKey='';dirty=true;};$('start').onclick=()=>{if(streaming||listenWhenConnected)stop();else start();};$('inputsource').onchange=()=>{if(layout.includes(OG_SCOPE)&&$('inputsource').value!=='resolve'){if(!approveOGExit()){$('inputsource').value='resolve';return;}ogView?.end();}clearROI();$('fixture').disabled=$('inputsource').value==='resolve';if(streaming)start();};$('fixture').onchange=()=>{clearROI();if(streaming)start();};function selectPage(page,{restorePlot}={}){
- const settings=page==='settings',previous=gprimePage;if(settings&&restorePlot)gprimePage=restorePlot==='gprime';else if(!settings)gprimePage=page==='gprime';if(previous!==gprimePage&&socket?.readyState===1)socket.send(JSON.stringify({type:'stop'}));
+ const settings=page==='settings',previous=gprimePage;if(settings&&!embedded)void ensureGradingSettings();if(settings&&restorePlot)gprimePage=restorePlot==='gprime';else if(!settings)gprimePage=page==='gprime';if(previous!==gprimePage&&socket?.readyState===1)socket.send(JSON.stringify({type:'stop'}));
  document.body.classList.toggle('gprime-page',gprimePage);instances?.setVisible(!settings&&!gprimePage);
  if(embedded)embedded.host.advanced(embedded.id,settings);document.body.classList.toggle('embedded-settings',!!embedded&&settings);
  $('panel').hidden=!settings;$('scopeview').hidden=settings;$('scopeview').setAttribute('aria-labelledby',gprimePage?'gprimetab':'scopestab');
@@ -419,7 +419,7 @@ window.addEventListener('pagehide',()=>void keepAwake.set(false));document.addEv
 window.addEventListener('beforeunload',event=>{if(layout.includes(OG_SCOPE)&&ogView?.game?.inProgress){event.preventDefault();event.returnValue='';}});
 document.addEventListener('pointerdown',()=>{if(layout.includes(OG_SCOPE))ogView?.armAudio();},{passive:true});
 
-if(new URLSearchParams(location.search).get('grading')==='1')ensureGradingSettings();
+if(!embedded)ensureGradingSettings();
 if(homeScreenLaunch&&!embedded&&$('gprimetab')){try{const saved=JSON.parse(localStorage.getItem('scopeSelectedTabV1'));if(saved&&['scopes','gprime','settings'].includes(saved.page))selectPage(saved.page,{restorePlot:['scopes','gprime'].includes(saved.plot)?saved.plot:'scopes'});}catch{}}
 
 
