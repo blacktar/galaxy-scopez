@@ -1,3 +1,4 @@
+import {createGamepadHub} from './host-gamepads.mjs';
 import {gradeAudition} from './grade-audition.mjs';
 import {nativeCRC,nativeIngest,nativeIngestStats} from './native-analysis.mjs';
 import {LiveSource} from './live-source.mjs';import {MAX_INPUT,decodeInput} from './resolve-input.mjs';
@@ -12,6 +13,7 @@ const diagnostics=process.env.SCOPE_DIAGNOSTICS==='1';
 const fpsReports=[],results=[],clientErrors=[],viewers=new Map();let nextClient=1;
 const root=path.dirname(fileURLToPath(import.meta.url));
 const grading=process.env.GS_GRADING_AUDITION==='1'?gradeAudition(root):null;
+const gamepads=grading?createGamepadHub({request:grading.request,stateFile:path.join(process.env.GS_STATE_DIR||path.join(root,'../docs/reverse-scopes'),'gamepad-config.json')}):null;
 const handler=(req,res)=>{const name=new URL(req.url,'http://local').pathname;if(name==='/api/grade-audition'){
  if(!grading){res.writeHead(404).end('Grading audition is disabled');return;}
  void grading.handle(req,res);return;
@@ -49,7 +51,7 @@ wss.on('connection',(ws,req)=>{
  let run=null,timer;const send=v=>{if(diagnostics&&['complete','error','stopped'].includes(v.type)){const entry={time:new Date().toISOString(),clientId,viewerLabel,backend,mode:run?.mode??null,frames:run?.seq??0,bytes:run?.size??0,...v};results.push(entry);if(results.length>100)results.shift();console.log('PROBE_RESULT '+JSON.stringify(entry));}if(ws.readyState===1)ws.send(JSON.stringify(v),{compress:false});};const stop=()=>{clearTimeout(timer);run=null;subscription?.dispose?.();subscription=null;};
  const next=()=>{if(!run)return;const r=run;r.packet=encode(r.seq,fixture(r.size,r.mode,r.seq/20));r.tick=performance.now();ws.send(r.packet,{compress:false});timer=setTimeout(()=>{send({type:'error',message:'Echo timeout after 10 seconds'});stop();},10000);};
  ws.on('message',(data,binary)=>{try{
-  if(!binary){const msg=JSON.parse(data);if(msg.type==='identify'){internalScope=msg.internalScope===true;ownerLabel=typeof msg.ownerLabel==='string'?msg.ownerLabel.slice(0,48):'';if(typeof msg.label==='string')viewerLabel=msg.label.replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,48)||('Viewer '+clientId);send({type:'identified',clientId,label:viewerLabel});return;}
+  if(!binary){const msg=JSON.parse(data);if(typeof msg.type==='string'&&msg.type.startsWith('gamepad_')){if(data.length>65536)throw Error('Controller message too large');internalScope=true;gamepads?.handle(ws,msg);return;}if(msg.type==='identify'){internalScope=msg.internalScope===true;ownerLabel=typeof msg.ownerLabel==='string'?msg.ownerLabel.slice(0,48):'';if(typeof msg.label==='string')viewerLabel=msg.label.replace(/[\x00-\x1f\x7f]/g,'').trim().slice(0,48)||('Viewer '+clientId);send({type:'identified',clientId,label:viewerLabel});return;}
    if(msg.type==='viewer_fps'){if(data.length>4096)return;if(!['fps','render_fps','elapsed','frames','draws'].every(k=>Number.isFinite(msg[k])&&msg[k]>=0)||msg.elapsed>120||msg.fps>1000||msg.render_fps>1000)return;const entry={time:new Date().toISOString(),clientId,viewerLabel};for(const key of ['fps','render_fps','elapsed','frames','draws','decode_ms','draw_submission_ms','MiB_s','backend','smooth','debug','quality','raster_scale','active_scopes','wave_colour','visible','source','generation'])entry[key]=msg[key];fpsReports.push(entry);if(fpsReports.length>100)fpsReports.shift();return;}
    if(msg.type==='viewer_metrics'){if(!diagnostics)return;const entry={type:'viewer_metrics',time:new Date().toISOString(),clientId,viewerLabel,backend:msg.backend==='Canvas 2D'?'Canvas 2D':'WebGL 2',fixture:msg.fixture==='Resolve'?'Resolve':KINDS.includes(msg.fixture)?msg.fixture:'unknown'};for(const key of ['compute_ms','draw_submission_ms','fps','render_fps','MiB_s','frames','display_dropped','server_skipped'])if(Number.isFinite(msg[key])&&msg[key]>=0)entry[key]=msg[key];if(['native','video','off','released','unavailable'].includes(msg.keep_awake))entry.keep_awake=msg.keep_awake;if(typeof msg.smooth==='boolean')entry.smooth=msg.smooth;if(['auto','low','medium','high'].includes(msg.render_quality))entry.render_quality=msg.render_quality;if(Number.isFinite(msg.raster_scale)&&msg.raster_scale>0&&msg.raster_scale<=2)entry.raster_scale=msg.raster_scale;if(msg.processing&&typeof msg.processing==='object'){entry.processing={};if(['GTap Metal','host CPU'].includes(msg.processing.backend))entry.processing.backend=msg.processing.backend;for(const key of ['analysis_workers','decode_ms','analysis_ms','packing_ms','total_ms'])if(Number.isFinite(msg.processing[key])&&msg.processing[key]>=0)entry.processing[key]=msg.processing[key];}try{entry.config=configuration(msg.config);}catch{}results.push(entry);if(results.length>100)results.shift();return;}
    if(msg.type==='scope_visibility'){if(subscription){subscription.paused=msg.visible===false;if(!subscription.paused)for(const key of subscription.pending.keys())subscription.pending.set(key,performance.now());subscription.pump();}return;}
@@ -67,13 +69,13 @@ wss.on('connection',(ws,req)=>{
   }
   if(!run)return;const r=run;decode(data,r.seq);if(!Buffer.from(r.packet).equals(data))throw Error('Echo bytes differ');clearTimeout(timer);r.samples.push(performance.now()-r.tick);r.seq++;
   if(r.seq===r.count){const elapsed=(performance.now()-r.start)/1000,s=[...r.samples].sort((a,b)=>a-b);send({type:'complete',frames:r.seq,bytes:r.size,integrity:'PASS',MiB_s:r.seq*r.size/elapsed/1048576,median_ms:s[Math.floor(s.length/2)],p95_ms:s[Math.min(s.length-1,Math.floor(s.length*.95))]});stop();}else next();
- }catch(err){send({type:'error',message:err.message});stop();}});ws.on('close',()=>{stop();viewers.delete(clientId);});ws.on('error',()=>{stop();viewers.delete(clientId);});
+ }catch(err){send({type:'error',message:err.message});stop();}});ws.on('close',()=>{stop();gamepads?.disconnect(ws);viewers.delete(clientId);});ws.on('error',()=>{stop();gamepads?.disconnect(ws);viewers.delete(clientId);});
 });
 const host=process.env.HOST||'127.0.0.1',port=Number(process.env.PORT||8765);
 const socketDirectory=`/tmp/ghettoscopez-${process.getuid()}`;fs.mkdirSync(socketDirectory,{recursive:true,mode:0o700});
 if(!nativeIngest)throw Error('Build native analysis before starting local ingest');
 const stopIngest=nativeIngest(`${socketDirectory}/ingest-${port}.sock`,packet=>{try{live.ingestNative(packet);}catch(error){console.error('Local ingest rejected:',error.message);}});
-process.once('SIGINT',()=>{grading?.stop();stopIngest();process.exit(0);});process.once('SIGTERM',()=>{grading?.stop();stopIngest();process.exit(0);});
+process.once('SIGINT',()=>{gamepads?.stop();grading?.stop();stopIngest();process.exit(0);});process.once('SIGTERM',()=>{gamepads?.stop();grading?.stop();stopIngest();process.exit(0);});
 server.listen(port,host,()=>{const scheme=tls?'https':'http',viewerPath='/scopes.html'+(grading?'?grading=1':'');console.log(`Local: ${scheme}://localhost:${port}${viewerPath}`);if(host==='0.0.0.0')for(const list of Object.values(os.networkInterfaces()))for(const n of list||[])if(n.family==='IPv4'&&!n.internal)console.log(`iPad: ${scheme}://${n.address}:${port}${viewerPath}`);console.log('Resolve ingest: loopback POST /api/resolve/input. Ctrl-C stops the server.');});
 
 // Session supervisor IPC is available only to its own child process, never over HTTP.

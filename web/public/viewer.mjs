@@ -1,3 +1,5 @@
+import {mountGamepadClient} from './gamepad-client.mjs';
+import {mountGamepadSettings} from './gamepad-settings.mjs';
 import {createScopeHost} from './scope-host.mjs';
 import {hdrTransfer,signalNits,nitsSignal,hdrLabel,displayRange} from './hdr.mjs';
 import {drawExtents} from './extents.mjs';
@@ -418,3 +420,10 @@ document.addEventListener('pointerdown',()=>{if(layout.includes(OG_SCOPE))ogView
 
 if(new URLSearchParams(location.search).get('grading')==='1')ensureGradingSettings();
 if(homeScreenLaunch&&!embedded&&$('gprimetab')){try{const saved=JSON.parse(localStorage.getItem('scopeSelectedTabV1'));if(saved&&['scopes','gprime','settings'].includes(saved.page))selectPage(saved.page,{restorePlot:['scopes','gprime'].includes(saved.plot)?saved.plot:'scopes'});}catch{}}
+
+
+
+if(!embedded){
+ const broker=mountGamepadClient({toggleView:()=>selectPage(gprimePage?'scopes':'gprime'),balanceView:()=>gprimeView?.gamepad.action('balanceView'),onResult:(action,result)=>gprimeView?.controllerResult(action,result)});
+ let mounted=false;broker.subscribe(state=>{if(state&&!mounted){mounted=true;mountGamepadSettings({navigator:broker.navigator,storage:broker.storage,broker});}});
+}

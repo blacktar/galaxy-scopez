@@ -27,7 +27,7 @@ Later keeps it available under GS → Enable Resolve controls… .
 
 ## Install and start
 
-This release includes **GTap 1.2.35** and **viewer 0.5.0**.
+This release includes **GTap 1.2.35** and **viewer 0.6.0**.
 The supplied universal GTap binary requires **macOS 27 or later** (Apple silicon
 or Intel). Earlier macOS versions have not been verified for this release.
 DaVinci Resolve is required. The new `.pkg` installer bundles the server,
@@ -43,8 +43,8 @@ separate runtime installation are required.
    Open its panel’s network address on the other display.
 
 Open **Galaxy Scopez** from Applications to reopen the menu-bar app after quitting.
-The installer is Developer ID signed and Apple-notarised. Installation has been
-confirmed working by the user. The earlier ZIP/Install.command package is
+The installer is Developer ID signed and Apple-notarised. Earlier installer versions
+were confirmed working by the user; this package has not been installed locally. The earlier ZIP/Install.command package is
 retained as a legacy download.
 
 ## What is included
@@ -165,7 +165,7 @@ Release 0.5.0 includes:
 
 Source trace colours are optional packed rgb8 bin means (about 1/255 component precision); source float32 measurements and uint32 populations are unchanged. Colour data is produced by a bounded Metal tile kernel and forwarded without source-image frames. Snapshot storage retains its own immutable colour/count planes. The current suite has 218 passing web tests; independent GPU/count/wire and shared-footprint fixtures are recorded locally. These checks are not measurements of Resolve playback or iPad refresh rate.
 
-Install a changed GTap only after Resolve quits. Backend JavaScript changes need a managed host restart; static viewer changes need a browser reload. Viewer 0.5.0 includes GTap 1.2.35. Scope modes, individual controls and GPrime have been tested with Resolve and iPad Safari.
+Install a changed GTap only after Resolve quits. Backend JavaScript changes need a managed host restart; static viewer changes need a browser reload. Viewer 0.6.0 includes GTap 1.2.35. Scope modes, individual controls and GPrime have been tested with Resolve and iPad Safari.
 
 Development 0.4.9 adds exact optional Y histogram counts (analysis15/histY) and shared RGB/YRGB header modes for overlaid/separate histograms. GTap1.2.35 appends explicit BT.2100 PQ/HLG choices without shifting existing saved-project indices. HDR detection requires explicit BT.2020 primaries and transfer, never inferred from gamut or numeric magnitude. PQ/HLG axes are signal scales; HLG uses a configurable zero-black400–2000nit reference display and BT.2100 system gamma (default1000nit). Parade range is display-only; adjustable SDR/HDR references remain separate from PAS. Encoded samples and count precision are preserved.
 
@@ -194,3 +194,11 @@ Contrast native feedback accepts the observed flags0/flags2 readback acknowledge
 Home Screen navigation remembers Scopes/GPrime/Settings across Reload in browser-local preferences, including the underlying plot page when Settings is selected. Embedded scope navigation and ordinary browser launches do not overwrite that preference.
 
 GS → About Galaxy Scopes displays the same credits, signal-handling, placement and connection information as GTap’s About dialog. Its Project website button opens the canonical online guide. No local HTML guide is installed.
+
+Release 0.6.0 provides general gamepad input from the native GS host (Apple GameController framework, background events enabled) and connected browser viewers (native Gamepad API). Settings → GPrime · Gamepad lists controllers with their locations and requires explicit source selection. Standard Xbox/PlayStation-style positions include both sticks/clicks and pressure-sensitive triggers; Stadia is a tested discovery device, not a special-case backend. Actual controller/OS support depends on what the native framework or browser exposes.
+
+GS owns the selected input and runs the grading interpreter independently of browser rendering/focus. Exactly one source drives the existing serial GPrime worker; no automatic fallback. Mapping capture pauses the shared interpreter. Stale input (250ms), disconnect, malformed state or disabled mode ends the controller gesture and requires neutral before rearming. Profiles migrate from the first connected viewer and persist on the host (16 profiles maximum); mode starts off after host restart. Browser sources stop when hidden; native host input can continue with all viewers closed. Controller menus/view switches target the configuring viewer and are unavailable when no viewer is connected. Touch remains separate and backend gesture ownership prevents concurrent GPrime drags. Native clip actions retain target checks and main-Resolve-window menu dispatch. PAS haptics and Scopez Quest integration remain pending. Release 0.6.0 includes GTap 1.2.35.
+
+Controller shortcuts retain their recorded combination until the main button is released, suppress base actions and wait for in-flight GPrime readiness. Changing the input owner cancels a waiting shortcut; errors remain visible briefly. Gamepad Settings follow the complete GPrime setup section; Control bindings start collapsed. Single GPrime layouts stretch the grading surface to fill available card height; mixed-scope caps and narrow portrait stacking remain.
+
+Known limitation: an intermittent browser focus change with detached non-fullscreen Resolve Scopes remains unresolved; the latest user-operated capture did not reproduce it.

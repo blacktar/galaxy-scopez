@@ -10,6 +10,7 @@ final class HostApp: NSObject, NSApplicationDelegate {
     var termination: DispatchSourceSignal?
     let status = NSMenuItem(title: "Starting…", action: nil, keyEquivalent: "")
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NativeGamepads.shared.start()
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.title = "GS"
         item.button?.toolTip = "Galaxy Scopez"

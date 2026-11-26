@@ -51,7 +51,7 @@ export function gradeAudition(root) {
     tail=result.catch(()=>{});
     return result.finally(()=>{queued--;});
   }
-  return {stop, async handle(req,res){
+  return {stop, request:enqueue, async handle(req,res){
     const local=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
     res.setHeader('Cache-Control','no-store');
     if(req.method==='GET'&&local){

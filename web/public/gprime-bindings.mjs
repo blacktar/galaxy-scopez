@@ -32,7 +32,7 @@ export function mountGPrimeBindings({before,call}){
  <div class="gp-map"></div><h3>Before grading</h3><ol></ol>
  <p>These assignments do not change your grade. Check the listed settings in Resolve; node processing settings are not verified automatically.</p>
  <p class="gp-status" role="status"></p>`;
- before.before(box);
+ before.before(box);const gamepad=document.getElementById('gprimegamepad');if(gamepad)box.after(gamepad);
  window.dispatchEvent(new Event('gprime-settings-mounted'));
  let info=null,bindings={},busy=false;
  const rows=new Map(),fetchButton=box.querySelector('.gp-fetch'),status=box.querySelector('.gp-status');
