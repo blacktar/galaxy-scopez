@@ -7,7 +7,7 @@ export function ogDisplaySettings(saved){return {zoom:[1,2,3,4].includes(saved?.
 export const OG_ORDER=['R','M','B','C','G','Y'];
 export const OG_INK={R:'#ff453a',M:'#ff35ed',B:'#368bff',C:'#39f5ff',G:'#67ff57',Y:'#ffe74d'};
 export const OG_END='End this game? Progress will be lost, like tears in the rain.';
-export function clock(ms){const seconds=Math.max(0,Math.floor(ms/1000));return [Math.floor(seconds/3600),Math.floor(seconds/60)%60,seconds%60].map(v=>String(v).padStart(2,'0')).join(':');}
+export function clock(ms){const value=Math.max(0,Math.floor(Number.isFinite(ms)?ms:0));return [String(Math.floor(value/60000)).padStart(2,'0'),String(Math.floor(value/1000)%60).padStart(2,'0'),String(value%1000).padStart(3,'0')].join(':');}
 export function ogTargets(data){const targets=data.targets?.length?data.targets:calibratedTargets(data.source?.signal?.domain==='working'?'bt709':data.config?.matrix||'bt709');return OG_ORDER.map(label=>targets.find(t=>t.label===label&&t.percent===75)).filter(Boolean);}
 export function strongestTarget(data,collected=[],magnification=OG_MAGNIFICATION){
  const bins=data.vector,n=data.config?.vectorSize,zoom=(data.config?.vectorZoom||1)/magnification,targets=ogTargets(data);

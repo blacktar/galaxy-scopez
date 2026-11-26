@@ -17,6 +17,24 @@ PIVOT_TARGET = .336
 PIVOT_TOLERANCE = .00001
 
 
+def feedback_description(payload):
+    """Bounded read-only diagnostics; never changes the feedback acceptance gate."""
+    result={'payloadBytes':len(payload)}
+    if len(payload)<13:return result|{'shape':'short'}
+    _,flags,size=struct.unpack_from('<BII',payload);end=9+size
+    result.update(stateFlags=hex(flags),parameterBytes=size)
+    if size%9 or end+4>len(payload):return result|{'shape':'invalid-parameters'}
+    custom,=struct.unpack_from('<I',payload,end)
+    result.update(customBytes=custom,shape='valid' if end+4+custom==len(payload) else 'invalid-custom')
+    params=[struct.unpack_from('<I',payload,offset)[0] for offset in range(9,end,9)]
+    result['parameterIds']=[hex(value) for value in params[:128]]
+    result['hasPivot']=0x14 in params
+    if 0x14 in params:
+        value,=struct.unpack_from('<f',payload,9+params.index(0x14)*9+5)
+        result['pivot']=value if math.isfinite(value) else None
+    return result
+
+
 class PivotFeedback:
     """Readback gate, not a node identity or navigation implementation."""
     def __init__(self):
@@ -177,7 +195,8 @@ class ContrastPanelBridge:
                         for frame in decoder.feed(data):
                             dest, command, target, flags, payload = frame
                             self._log('received', destination=dest, command=hex(command),
-                                      target=hex(target), bytes=len(payload), prefix=payload[:64].hex())
+                                      target=hex(target), bytes=len(payload), prefix=payload[:64].hex(),
+                                      feedback=feedback_description(payload) if (dest,command,target)==(4,0x400,0x4fff) else None)
                             if self.feedback.receive(frame):
                                 self._log('pivot-refresh',pivot=self.feedback.pivot,verified=self.feedback.verified)
                                 self.feedback_ready.notify_all()

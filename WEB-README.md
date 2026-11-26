@@ -160,3 +160,5 @@ Known limitation: an intermittent browser focus change with detached non-fullscr
 Release 0.6.1 connects Scopez Quest to the shared GPrime gamepad controls. Its header links to controller setup and shows selected-source status. Grading input starts the real Resolve feed when Quest is visible; hidden Quest does not resume listening. Stopping listening during a held adjustment stays stopped until the next gesture. Existing GPrime mappings and host/viewer selection apply.
 
 GPrime node assignments and preflight are always mounted in Settings after Layout and before Gamepad settings, independent of the selected scope or first-opened tab.
+
+Viewer 0.6.2 retains connected controller viewers while they are in the background and reconnects registrations when needed. Scopez Quest timers use minutes:seconds:milliseconds. If native Contrast reports a fresh Pivot timeout, switch Resolve to another grading palette and back to Primaries Color Wheels, then retry; automatic recovery remains unresolved.

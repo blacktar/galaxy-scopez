@@ -53,7 +53,7 @@ export function createGamepadHub({request,readNative=readNativeGamepads,stateFil
  function broadcast(){const pads=devices();for(const c of clients.values()){const update=c.revision===configRevision?{}:{config};c.revision=configRevision;send(c,{...update,type:'gamepad_state',sequence:++sequence,client:c.id,devices:pads.map(({axes,buttons,at,...p})=>p),pad:selected(),capture:capture?.id??null,status:config.enabled?status:'Gamepad mode is off.',nativeError});}}
  async function pollNative(){if(polling||closed)return;polling=true;try{const result=await readNative();if(closed)return;const fresh=new Map();hostName=String(result.host||hostName).slice(0,80);for(const raw of (result.controllers??[]).slice(0,8)){if(typeof raw.device!=='string'||raw.device.length>100)continue;const key='host:'+raw.device;fresh.set(key,{...normalisePad(raw,key,'GS host — '+hostName),at:now()});}hostPads.clear();for(const [k,v]of fresh)hostPads.set(k,v);nativeError='';}catch{nativeError='Host controller discovery is unavailable. Check that the GS app is running and up to date.';}finally{polling=false;}}
  function step(){if(closed)return;const time=now();if(capture&&time-capture.at>3000)capture=null;
-  for(const [key,c]of clients)if(time-c.at>5000){clients.delete(key);if(capture?.id===key)capture=null;if(owner===key){engine.dismissUI();owner=null;}}
+  for(const [key,c]of clients)if(c.ws.readyState!==1){clients.delete(key);if(capture?.id===key)capture=null;if(owner===key){engine.dismissUI();owner=null;}}
   const pad=selected(),key=pad?.key??'';if(key!==selectedKey){selectedKey=key;configure();}
   engine.pause(!!capture);engine.step(clock(),pad);
   if(config.enabled&&pad&&!engine.busy&&!capture&&time-lastPrepare>2500){lastPrepare=time;void adapter.prepare();}
@@ -71,7 +71,7 @@ export function createGamepadHub({request,readNative=readNativeGamepads,stateFil
     if(!Object.keys(config.profiles).length&&msg.profiles&&typeof msg.profiles==='object'){for(const [k,v]of Object.entries(msg.profiles).slice(0,16))if(k.length<=300)config.profiles[k]=validateProfile(v);save();}
     broadcast();return true;
    }
-   if(!c)throw Error('Connect the controller viewer first.');c.at=now();
+   if(!c){const error=Error('Connect the controller viewer first.');error.code='registration-required';throw error;}c.at=now();
    if(msg.type==='gamepad_inputs'){
     const pads=new Map();for(const raw of (Array.isArray(msg.pads)?msg.pads:[]).slice(0,8)){if(!Number.isInteger(raw.index)||raw.index<0||raw.index>63)continue;const device=typeof raw.device==='string'?raw.device:raw.id;if(typeof device!=='string'||device.length>200)throw Error('Invalid controller identity');const key=c.id+':'+raw.index+':'+device;pads.set(key,{...normalisePad(raw,key,'Viewer — '+c.label),at:now()});}c.pads=pads;
     if(capture?.id===c.id)capture.at=now();
@@ -84,7 +84,7 @@ export function createGamepadHub({request,readNative=readNativeGamepads,stateFil
    }else if(msg.type==='gamepad_capture'){
     if(msg.active){if(capture&&capture.id!==c.id)throw Error('Another viewer is assigning a mapping.');capture={id:c.id,at:now()};engine.pause(true);}else if(capture?.id===c.id){capture=null;engine.pause(false);}broadcast();
    }else if(msg.type==='gamepad_ui_action'){if(owner!==c.id)throw Error('Use the viewer that enabled this controller.');if(!['undo','reset','apply1','apply2','fullscreen','balanceView','cancel'].includes(msg.action))throw Error('Unsupported controller action.');void engine.invoke(msg.action,true);}
-  }catch(e){if(ws.readyState===1)ws.send(JSON.stringify({type:'gamepad_error',message:e.message}));}
+  }catch(e){if(ws.readyState===1)ws.send(JSON.stringify({type:'gamepad_error',code:e.code||'invalid-request',message:e.message}));}
   return true;
  }
  const timer=autoStart?setInterval(step,16):null;timer?.unref();if(autoStart)void pollNative();

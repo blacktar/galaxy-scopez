@@ -71,7 +71,7 @@ export function createOGView(canvas){
   c.save();c.globalAlpha=1-fade;
   for(const label of labels){const e=transitions.findLast(e=>e.label===label),index=e?.index??game.collected.indexOf(label),target=targets.find(t=>t.label===label);if(!target)continue;const from=point(target),to=[20,27+index*31],elapsed=e?Math.min(1,(now-e.time)/800):1,progress=reduced?1:1-(1-elapsed)**3,q=e?.returning?1-progress:progress,x=from[0]+(to[0]-from[0])*q,y=from[1]+(to[1]-from[1])*q;if(e?.returning&&elapsed>.7){targetBox(x,y,label,(elapsed-.7)/.3);}diamond(x,y,label,reduced?0:now*.003,Math.max(.1,e?.returning?1-elapsed:Math.min(1,elapsed*4)));}
   c.restore();
-  c.font='12px ui-monospace,monospace';c.fillStyle='#eff8ff';c.textAlign='right';c.fillText(clock(game.elapsed(now)),width-12,20);c.fillStyle='#c2d8e9';c.fillText('Highscore: '+(game.best===null?'--:--:--':clock(game.best)),width-12,height-12);c.textAlign='left';
+  c.font='12px ui-monospace,monospace';c.fillStyle='#eff8ff';c.textAlign='right';c.fillText(clock(game.elapsed(now)),width-12,20);c.fillStyle='#c2d8e9';c.fillText('Highscore: '+(game.best===null?'--:--:---':clock(game.best)),width-12,height-12);c.textAlign='left';
   if(completeAt!==null){const scrollHeight=Math.min(50,Math.max(24,height*.065)),size=Math.max(16,Math.min(width*.72,height*.68,height-scrollHeight-70)),artCy=Math.max(24+size/2,(height-scrollHeight-24)/2);
    // Native animated WebP playback avoids copying/decoding its96frames in JS.
    if(artReadyAt!==null){Object.assign(art.style,{display:'block',left:(canvas.offsetLeft+cx-size/2)+'px',top:(canvas.offsetTop+artCy-size/2)+'px',width:size+'px',height:size+'px',opacity:String(fade)});
